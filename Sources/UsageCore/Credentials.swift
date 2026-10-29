@@ -1,6 +1,5 @@
 import CryptoKit
 import Foundation
-import Security
 
 public struct Credentials: Sendable, Equatable {
     public let token: String?
@@ -26,8 +25,8 @@ public enum CredentialStore {
     ///
     /// ponytail: a profile whose credentials really have all expired now walks
     /// every candidate on each poll instead of stopping at the first. It only
-    /// costs anything when something is already broken, and a Keychain miss
-    /// returns immediately without a dialog.
+    /// costs anything when something is already broken, and a `security` miss
+    /// exits immediately without a dialog.
     public static func read(for profile: Profile) -> Credentials {
         var expiredFallback: Credentials?
 
@@ -56,7 +55,7 @@ public enum CredentialStore {
     /// over the raw `CLAUDE_CONFIG_DIR` string with no resolving, no symlink
     /// following and no trailing-slash trimming, so the exact spelling the user
     /// exported is what got hashed. We can't know that spelling, so we try the
-    /// plausible ones; a miss costs one lookup and pops no dialog.
+    /// plausible ones; a miss costs one `security` exit and pops no dialog.
     ///
     /// This can't misattribute an account the way a bare fallback would: the hash
     /// *is* the per-profile key, so a profile that owns no item finds nothing.
@@ -88,15 +87,16 @@ public enum CredentialStore {
         return parse(data)
     }
 
-    /// Read directly rather than through `/usr/bin/security`. The item's ACL
-    /// trusts `security` because Claude Code writes through it, so the old route
-    /// never prompted — but it also meant any process could read the token the
-    /// same way, and the poller busy-waited on a subprocess. Direct reads prompt
-    /// once; "Always Allow" adds this app's signing identity to the ACL, which
-    /// survives rebuilds signed by the same certificate and Claude Code's
-    /// in-place token updates.
-    static func readKeychain(service: String) -> Credentials? {
-        // Service only, no account, and do not be tempted back. 85b3af6 read
+    /// Through `/usr/bin/security`, not `SecItemCopyMatching`, and do not be
+    /// tempted back. Claude Code writes the item with `security`, so its ACL
+    /// trusts that tool and this never prompts. A direct read was tried on
+    /// 2026-10-29: "Always Allow" added the app to the ACL, but Claude Code's
+    /// next in-place token refresh reset it, so the prompt returned every
+    /// refresh, roughly every eight hours.
+    static func readKeychain(service: String, timeout: TimeInterval = 60) -> Credentials? {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        // Service only, no `-a`, and do not be tempted back. 85b3af6 read
         // `claude-code-user` out of the Claude Code binary and pinned it; on a
         // real three-profile machine every item's account is the macOS short
         // username instead, so the pin matched nothing and 0.3.7 shipped a
@@ -107,23 +107,32 @@ public enum CredentialStore {
         // ponytail: a value over 2400B is stored chunked across `<account>#0`,
         // `#1`, … and this would return one base64 chunk, which `parse` rejects
         // as non-JSON. Reassemble if tokens ever outgrow 2400B.
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecReturnData as String: true,
-        ]
-        // Blocks while the first-read consent dialog is up, as `security` did.
-        // A miss returns errSecItemNotFound at once, with no dialog.
-        var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data
-        else { return nil }
+        task.arguments = ["find-generic-password", "-w", "-s", service]
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+
+        guard (try? task.run()) != nil else { return nil }
+
+        // The very first read pops a Keychain consent dialog and blocks until the
+        // user answers, so the timeout is generous. It exists only so a wedged
+        // `security` can't hold the poller forever.
+        let deadline = Date().addingTimeInterval(timeout)
+        while task.isRunning && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        guard !task.isRunning else {
+            task.terminate()
+            return nil
+        }
+        // Safe to read after exit: the token is a few KB, well under the pipe buffer.
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard task.terminationStatus == 0 else { return nil }
         return parse(data)
     }
 
     static func parse(_ data: Data) -> Credentials? {
-        // Tolerate surrounding whitespace, which `security -w` used to append.
+        // `security -w` appends a newline; JSONSerialization is happier without it.
         let trimmed = String(decoding: data, as: UTF8.self)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard

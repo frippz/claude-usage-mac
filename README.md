@@ -45,8 +45,10 @@ login Keychain. Claude Code names the Keychain item after its config folder:
 `Claude Code-credentials-<first 8 hex of sha256(config dir)>` for a folder
 relocated with `CLAUDE_CONFIG_DIR`.
 
-The Keychain is read directly, so macOS asks once whether Claude Usage may use
-the item. "Always Allow" covers later rebuilds signed with the same certificate.
+The Keychain item is read through `/usr/bin/security`. Claude Code writes the
+item with that tool, so macOS already trusts it and never prompts. Reading it
+directly would prompt again after every token refresh, because Claude Code's
+refresh resets the item's access list.
 
 **Tokens are read-only.** The app never refreshes or writes a token. Refreshing
 would use up Claude Code's single-use refresh token behind its back and could log
@@ -103,9 +105,6 @@ swift run usage-cli              # human-readable summary
 swift run usage-cli --profiles   # discovered profiles
 swift run usage-cli --json       # what the widget will render
 ```
-
-`usage-cli` is unsigned, so macOS asks for Keychain access again after each
-rebuild.
 
 The snapshot tests render every widget size and the menu popover to PNGs in
 `snapshots/`:
