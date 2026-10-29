@@ -117,4 +117,6 @@ xcodebuild test -project ClaudeUsage.xcodeproj -scheme SnapshotTests
 
 ## License
 
-MIT. The original work is by Saeed Kolivand.
+MIT, see [LICENSE](LICENSE). The original work is by Saeed Kolivand. Upstream
+declares MIT in its README but ships no license file, so this one uses the
+standard MIT text.
