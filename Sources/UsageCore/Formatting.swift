@@ -35,32 +35,11 @@ public enum Format {
         return "\(minutes)m"
     }
 
-    public static func tokens(_ n: Int) -> String {
-        let v = Double(n)
-        switch v {
-        case 1e9...:  return trim(v / 1e9, wide: v >= 1e10) + "B"
-        case 1e6...:  return trim(v / 1e6, wide: v >= 1e7) + "M"
-        case 1e3...:  return trim(v / 1e3, wide: v >= 1e4) + "K"
-        default:      return "\(n)"
-        }
-    }
-
-    public static func cost(_ usd: Double) -> String {
-        if usd >= 1000 { return "$" + trim(usd / 1000, wide: false) + "k" }
-        if usd >= 100 { return "$" + String(format: "%.0f", usd) }
-        return "$" + String(format: "%.2f", usd)
-    }
-
     public static func percent(_ pct: Double?) -> String {
         guard let pct else { return "--" }
         return "\(Int(pct.rounded()))%"
     }
 
-    /// One decimal place until the integer part hits three digits, then none —
-    /// keeps the string at four characters or fewer for narrow key faces.
-    private static func trim(_ v: Double, wide: Bool) -> String {
-        String(format: wide ? "%.0f" : "%.1f", v)
-    }
 }
 
 public enum HexColor {
@@ -78,5 +57,13 @@ public enum HexColor {
         return (Double((v >> 16) & 0xff) / 255,
                 Double((v >> 8) & 0xff) / 255,
                 Double(v & 0xff) / 255)
+    }
+}
+
+public enum AppVersion {
+    /// Reads the bundle rather than a constant, so it can't drift from what
+    /// xcodebuild actually stamped in.
+    public static var current: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0.0.0"
     }
 }

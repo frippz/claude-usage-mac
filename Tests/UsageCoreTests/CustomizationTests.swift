@@ -65,7 +65,8 @@ final class AdditiveDecodeTests: XCTestCase {
         return d
     }
 
-    /// Exactly what 0.4.0 wrote — no models, no per-model windows, no burn rate.
+    /// Exactly what 0.4.0 wrote — no per-model windows, no burn rate, and the
+    /// transcript `stats` this fork no longer reads, which must be ignored.
     private let legacySnapshot = """
     {"updatedAt":"2026-08-10T12:00:00Z","sessionPct":42,"weeklyPct":18,
      "stats":{"todayTokens":10,"todayCost":1,"weekTokens":20,"weekCost":2,
@@ -76,10 +77,8 @@ final class AdditiveDecodeTests: XCTestCase {
     func testSnapshotWrittenBeforeTheseFieldsExistedStillDecodes() throws {
         let snapshot = try decoder.decode(Snapshot.self, from: Data(legacySnapshot.utf8))
         XCTAssertEqual(snapshot.sessionPct, 42)
-        XCTAssertEqual(snapshot.stats.todayTokens, 10)
         XCTAssertNil(snapshot.opusPct)
         XCTAssertNil(snapshot.burnRatePerHour)
-        XCTAssertTrue(snapshot.stats.models.isEmpty)
     }
 
     func testBundleWrittenBeforeRefreshSecondsExistedStillDecodes() throws {
@@ -92,18 +91,6 @@ final class AdditiveDecodeTests: XCTestCase {
         XCTAssertEqual(bundle.profiles.count, 1)
     }
 
-    /// `LogStats` decodes by hand precisely so a key added tomorrow doesn't break
-    /// a file written today. A stats object missing nearly everything is still a
-    /// valid stats object.
-    func testStatsToleratesMissingKeysEntirely() throws {
-        let stats = try decoder.decode(LogStats.self, from: Data("{}".utf8))
-        XCTAssertEqual(stats.todayTokens, 0)
-        XCTAssertTrue(stats.projects.isEmpty)
-        XCTAssertTrue(stats.models.isEmpty)
-        // Defaults to readable — "no key" must not read as "directory missing".
-        XCTAssertTrue(stats.ok)
-    }
-
     func testRoundTripKeepsTheNewFields() throws {
         // Whole seconds, for the reason the sibling test in FormatAndPayloadTests
         // spells out: .iso8601 drops the fractional part, so a Date() default
@@ -114,7 +101,6 @@ final class AdditiveDecodeTests: XCTestCase {
             sevenDay: UsageNode(utilization: 18, resetsAt: nil),
             sevenDayOpus: UsageNode(utilization: 61, resetsAt: nil)))
         original.burnRatePerHour = 12
-        original.stats.models = [ModelUsage(name: "Opus", tokens: 5, cost: 1)]
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -250,28 +236,5 @@ final class TimeToFullTests: XCTestCase {
     /// withhold the only number we do have.
     func testMissingResetStillProjects() {
         XCTAssertNotNil(snapshot(pct: 40, rate: 20, resetsIn: nil).timeToFull(now: now))
-    }
-}
-
-final class MonthToDateTests: XCTestCase {
-
-    func testSumsOnlyThisMonth() throws {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "UTC"))
-        let now = try XCTUnwrap(calendar.date(from: DateComponents(
-            year: 2026, month: 8, day: 10)))
-
-        func day(_ month: Int, _ day: Int, cost: Double) throws -> DayUsage {
-            DayUsage(day: try XCTUnwrap(calendar.date(from: DateComponents(
-                year: 2026, month: month, day: day))), tokens: 0, cost: cost)
-        }
-
-        var snapshot = Snapshot()
-        snapshot.stats.days = [
-            try day(7, 30, cost: 100),   // last month, excluded
-            try day(8, 1, cost: 1),
-            try day(8, 10, cost: 2),
-        ]
-        XCTAssertEqual(snapshot.monthToDateCost(now: now, calendar: calendar), 3, accuracy: 1e-9)
     }
 }

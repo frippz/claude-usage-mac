@@ -263,51 +263,7 @@ final class ProfileCredentialsTests: XCTestCase {
     }
 }
 
-final class ProfileHistoryTests: XCTestCase {
-
-    func testDefaultProfileKeepsTheOriginalFilename() {
-        // The file shipped in v0.2.0 must not need migrating.
-        let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".claude", isDirectory: true)
-        let url = History.url(for: Profile(configDir: dir, isDefault: true))
-        XCTAssertEqual(url.lastPathComponent, "history.json")
-    }
-
-    func testOtherProfilesGetTheirOwnFile() {
-        let a = History.url(for: Profile(configDir: URL(fileURLWithPath: "/Users/x/.claude-work"),
-                                         isDefault: false))
-        let b = History.url(for: Profile(configDir: URL(fileURLWithPath: "/Users/x/.claude-side"),
-                                         isDefault: false))
-        XCTAssertNotEqual(a, b)
-        XCTAssertTrue(a.lastPathComponent.hasPrefix("history-"))
-    }
-
-    func testTwoProfilesDoNotClobberEachOther() throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("hist-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-
-        let today = Calendar.current.startOfDay(for: Date())
-        let a = History(fileURL: root.appendingPathComponent("a.json"))
-        let b = History(fileURL: root.appendingPathComponent("b.json"))
-
-        a.merge([DayUsage(day: today, tokens: 100, cost: 1)])
-        b.merge([DayUsage(day: today, tokens: 900, cost: 9)])
-
-        XCTAssertEqual(a.recent(1).first?.tokens, 100)
-        XCTAssertEqual(b.recent(1).first?.tokens, 900)
-    }
-
-    func testSlugIsReadable() {
-        XCTAssertEqual(History.slug("/Users/saeed/.claude-work"), "users-saeed-claude-work")
-    }
-}
-
-/// Claude Code only refreshes the config dir it runs in, so a profile you have
-/// stopped using parks on a dead token and hours-old rings. The usage endpoint
-/// is account-scoped, so a live sibling on the same account has the real numbers.
-final class SnapshotBundleLendingTests: XCTestCase {
+final class SnapshotBundleReloadTests: XCTestCase {
 
     private func profile(_ name: String, email: String?, organization: String?) -> Profile {
         Profile(configDir: URL(fileURLWithPath: "/Users/tester/\(name)"),
@@ -320,76 +276,11 @@ final class SnapshotBundleLendingTests: XCTestCase {
             sevenDay: UsageNode(utilization: 9, resetsAt: Date().addingTimeInterval(3 * 86400))))
     }
 
-    /// What the screenshots showed: a frozen payload whose five-hour window has
-    /// already elapsed, so the ring renders "resets 0m".
-    private var expiredSnapshot: Snapshot {
-        Snapshot(usage: UsageData(
-            fiveHour: UsageNode(utilization: 2, resetsAt: Date().addingTimeInterval(-3600)),
-            sevenDay: nil),
-            error: "token-expired", stale: true)
-    }
-
     private func bundle(_ entries: [(Profile, Snapshot)]) -> SnapshotBundle {
         var built = SnapshotBundle(profileList: entries.map(\.0))
         for (profile, snapshot) in entries { built.profiles[profile.id] = snapshot }
         return built
     }
-
-    func testExpiredProfileTakesTheRingsOfASameAccountSibling() throws {
-        let dead = profile(".claude", email: "me@corp.com", organization: "Corp")
-        let alive = profile(".claude-intellij", email: "me@corp.com", organization: "Corp")
-        var subject = bundle([(dead, expiredSnapshot), (alive, liveSnapshot)])
-
-        subject.lendUsageBetweenSameAccountProfiles()
-
-        let healed = try XCTUnwrap(subject.profiles[dead.id])
-        let donor = try XCTUnwrap(subject.profiles[alive.id])
-        XCTAssertNil(healed.error)
-        XCTAssertFalse(healed.stale)
-        XCTAssertEqual(healed.sessionResetsAt, donor.sessionResetsAt)
-        XCTAssertEqual(healed.weeklyResetsAt, donor.weeklyResetsAt)
-        XCTAssertEqual(healed.weeklyPct, 9)
-        // A future reset is the whole point: this is what stops "resets 0m".
-        XCTAssertGreaterThan(try XCTUnwrap(healed.sessionResetsAt), Date())
-    }
-
-    func testADifferentAccountNeverLendsItsNumbers() throws {
-        let dead = profile(".claude", email: "me@corp.com", organization: "Corp")
-        let other = profile(".claude-ruby", email: "me@corp.com", organization: "Other Org")
-        var subject = bundle([(dead, expiredSnapshot), (other, liveSnapshot)])
-
-        subject.lendUsageBetweenSameAccountProfiles()
-
-        XCTAssertEqual(subject.profiles[dead.id]?.error, "token-expired")
-        XCTAssertLessThan(try XCTUnwrap(subject.profiles[dead.id]?.sessionResetsAt), Date())
-    }
-
-    /// An unidentified profile must not inherit an identity by proximity.
-    func testAProfileWithNoAccountOnDiskBorrowsNothing() {
-        let dead = profile(".claude", email: nil, organization: nil)
-        let alive = profile(".claude-intellij", email: nil, organization: nil)
-        var subject = bundle([(dead, expiredSnapshot), (alive, liveSnapshot)])
-
-        subject.lendUsageBetweenSameAccountProfiles()
-
-        XCTAssertEqual(subject.profiles[dead.id]?.error, "token-expired")
-    }
-
-    /// "no-token" is also what a denied Keychain prompt looks like. Hiding it
-    /// behind a sibling's numbers would bury something the user can fix.
-    func testSignedOutProfileIsLeftSayingSo() {
-        let out = profile(".claude", email: "me@corp.com", organization: "Corp")
-        let alive = profile(".claude-intellij", email: "me@corp.com", organization: "Corp")
-        var subject = bundle([(out, Snapshot(usage: nil, error: "no-token")),
-                              (alive, liveSnapshot)])
-
-        subject.lendUsageBetweenSameAccountProfiles()
-
-        XCTAssertEqual(subject.profiles[out.id]?.error, "no-token")
-        XCTAssertNil(subject.profiles[out.id]?.sessionPct)
-    }
-
-    // MARK: - Reload gating
 
     /// Every poll restamps `updatedAt` whether or not a fetch succeeded, so
     /// reloading on inequality alone asked WidgetKit for 1440 reloads a day

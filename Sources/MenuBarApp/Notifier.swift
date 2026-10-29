@@ -1,7 +1,7 @@
 import Foundation
 import UserNotifications
 
-/// Threshold and budget alerts.
+/// Threshold alerts.
 ///
 /// Deliberately thin: authorize once, post one notification, never schedule and
 /// never repeat. Everything about *when* to fire lives in Poller, because that's

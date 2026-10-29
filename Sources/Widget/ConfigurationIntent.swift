@@ -1,10 +1,10 @@
 import AppIntents
 import WidgetKit
 
-/// The Edit Widget form. Each placed widget carries its own scope, so you can
-/// have one per account, or one per project, side by side.
+/// The Edit Widget form. Each placed widget carries its own profile, so you can
+/// have one per account side by side.
 ///
-/// Both parameters are plain `String`s rather than `AppEntity`s, deliberately.
+/// Parameters are plain `String`s rather than `AppEntity`s, deliberately.
 /// An AppEntity is stored as an `EntityIdentifier`, which has to be mapped back
 /// to a registered type when the extension resolves it — and when that lookup
 /// fails it fails *silently*:
@@ -17,18 +17,11 @@ import WidgetKit
 /// primitive: there is no type registry involved, so there is nothing to fail.
 struct UsageConfigIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Claude Usage"
-    static var description = IntentDescription(
-        "Choose which Claude account to show, and optionally a single project.")
+    static var description = IntentDescription("Choose which Claude account to show.")
 
     /// A profile's config directory path — the same value used as `Profile.id`.
     @Parameter(title: "Profile", optionsProvider: ProfileOptions())
     var profile: String?
-
-    /// Nil means the whole account. A project has no limit percentages of its
-    /// own — Anthropic reports those per account — so a project-scoped widget
-    /// shows tokens, cost and history instead of gauges.
-    @Parameter(title: "Project", optionsProvider: ProjectOptions())
-    var project: String?
 
     /// How often this widget re-reads the file the app writes.
     ///
@@ -36,29 +29,12 @@ struct UsageConfigIntent: WidgetConfigurationIntent {
     /// app fetches, and when the app isn't running there is nothing new on disk
     /// to find — so "Follow app" is the honest default and the rest exist for
     /// people who want a placed widget to touch the disk less often.
-    ///
-    /// Adding a parameter is the safe kind of change to a live configuration
-    /// intent: existing selections for the two above keep decoding and this one
-    /// simply arrives nil. It was changing a parameter's *type* that silently
-    /// emptied everyone's choices in 0.3.2.
     @Parameter(title: "Refresh", optionsProvider: RefreshOptions())
     var refresh: String?
-
-    /// Which face this widget draws — `FaceStyle.label` strings, "Default"
-    /// being the standard look. A String for the registry-free reason above,
-    /// and additive like Refresh, so placed widgets survive it.
-    @Parameter(title: "Style", optionsProvider: StyleOptions())
-    var style: String?
 }
 
-struct StyleOptions: DynamicOptionsProvider {
-    func results() async throws -> [String] {
-        FaceStyle.allCases.map(\.label)
-    }
-}
-
-/// Fixed strings rather than an enum parameter, for the same reason the two
-/// above are Strings — see the note at the top of this file.
+/// Fixed strings rather than an enum parameter, for the same reason the
+/// parameters above are Strings — see the note at the top of this file.
 struct RefreshOptions: DynamicOptionsProvider {
     /// Zero seconds means "whatever the app is polling at". Anything below
     /// WidgetKit's floor would be a promise the system doesn't keep, so the
@@ -94,21 +70,5 @@ struct ProfileOptions: DynamicOptionsProvider {
     /// unambiguous, and it is exactly `Profile.id`, so no mapping is needed.
     func results() async throws -> [String] {
         (SnapshotBundle.read()?.profileList ?? []).map(\.id)
-    }
-}
-
-struct ProjectOptions: DynamicOptionsProvider {
-    /// Every project across every profile, busiest first. Not filtered by the
-    /// chosen profile: AppIntents resolves parameters independently, and a name
-    /// that doesn't exist in the selected account renders as zero.
-    func results() async throws -> [String] {
-        guard let bundle = SnapshotBundle.read() else { return [] }
-        var seen = Set<String>()
-        return bundle.profileList
-            .compactMap { bundle.profiles[$0.id] }
-            .flatMap(\.stats.projects)
-            .sorted { $0.tokens > $1.tokens }
-            .filter { seen.insert($0.name).inserted }
-            .map(\.name)
     }
 }

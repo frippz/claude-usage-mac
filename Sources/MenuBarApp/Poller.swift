@@ -9,14 +9,7 @@ import WidgetKit
 final class Poller: ObservableObject {
     @Published private(set) var snapshot: Snapshot?
     @Published private(set) var isRefreshing = false
-    @Published private(set) var update: ReleaseInfo?
     @Published private(set) var profiles: [Profile] = []
-    @Published private(set) var lastUpdateCheck: Date?
-    @Published private(set) var updateState: UpdateState = .idle
-
-    /// Versions already tried this launch. Without it a release that fails to
-    /// install is retried on every poll for as long as the app stays open.
-    private var attempted: Set<String> = []
 
     /// Severity each metric was last seen at, for the selected profile only.
     ///
@@ -24,23 +17,13 @@ final class Poller: ObservableObject {
     /// one alert. Persisting it is a single UserDefaults line if that ever grates
     /// — it isn't worth a file today.
     private var lastLevel: [Metric: Level] = [:]
-    /// Period start each budget alert last fired for, keyed by budget.
-    private var budgetNotified: [String: Date] = [:]
 
     @AppStorage(SettingsKey.warn) private var warn = 50.0
     @AppStorage(SettingsKey.critical) private var critical = 80.0
     @AppStorage(SettingsKey.userAgent) private var userAgent = UsageAPI.defaultUserAgent
     @AppStorage(SettingsKey.selectedProfile) private var selectedProfile = ""
-    @AppStorage(SettingsKey.autoCheckUpdates) private var autoCheckUpdates = true
     @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = 60
     @AppStorage(SettingsKey.notifyThreshold) private var notifyThreshold = true
-    @AppStorage(SettingsKey.dailyBudget) private var dailyBudget = 0.0
-    @AppStorage(SettingsKey.monthlyBudget) private var monthlyBudget = 0.0
-    @AppStorage(SettingsKey.autoSwitchProfile) private var autoSwitchProfile = false
-
-    /// The profile the menu bar is temporarily showing instead of the selected
-    /// one — the auto-switch latch. See `AutoSwitch.shownProfile`.
-    private var autoSwitchedTo: String?
 
     private var loop: Task<Void, Never>?
     /// Only the wait, never the poll — see wakeNow().
@@ -130,11 +113,7 @@ final class Poller: ObservableObject {
         monitors = monitors.filter { live.contains($0.key) }
 
         for profile in profiles where monitors[profile.id] == nil {
-            let monitor = ProfileMonitor(profile: profile)
-            monitors[profile.id] = monitor
-            // Seeds history from the full transcript archive. Runs once ever per
-            // profile, behind whatever poll is already in flight.
-            Task { await monitor.backfillHistory() }
+            monitors[profile.id] = ProfileMonitor(profile: profile)
         }
 
         if let active = activeProfile, selectedProfile != active.id {
@@ -149,8 +128,6 @@ final class Poller: ObservableObject {
         snapshot = nil
         // Another account's severities would otherwise decide this one's alerts.
         lastLevel.removeAll()
-        // A hand-picked profile is an answer, not something to switch away from.
-        autoSwitchedTo = nil
         refreshNow()
     }
 
@@ -200,39 +177,8 @@ final class Poller: ObservableObject {
         Task { await refresh(force: true) }
     }
 
-    func checkForUpdates() {
-        Task {
-            update = await UpdateChecker.shared.check(
-                currentVersion: AppVersion.current, force: true)
-            lastUpdateCheck = Date()
-            await installIfFound()
-        }
-    }
-
-    /// Installs whatever the last check found, then restarts into it.
-    ///
-    /// Gated on `autoCheckUpdates` and nothing else: turning checks off is the
-    /// opt-out, because an app that has already noticed a new version and then
-    /// waits to be told to fetch it is the behaviour this replaced.
-    private func installIfFound() async {
-        guard autoCheckUpdates, updateState == .idle,
-              let release = update, attempted.insert(release.version).inserted
-        else { return }
-        do {
-            try await Updater.install(release, over: Bundle.main.bundleURL) { step in
-                Task { @MainActor in self.updateState = .busy(step) }
-            }
-        } catch {
-            // Left on screen rather than logged away: the app is still running
-            // the old version, and the only person who can act on that is
-            // looking at this pane.
-            updateState = .failed(error.localizedDescription)
-        }
-    }
-
     private func refresh(force: Bool = false) async {
-        // A manual tap while the first (slow) scan is still running would queue a
-        // second full read of the same gigabytes.
+        // A manual tap while a poll is in flight would just repeat it.
         guard !isRefreshing, !profiles.isEmpty else { return }
         isRefreshing = true
         defer { isRefreshing = false }
@@ -252,41 +198,15 @@ final class Poller: ObservableObject {
                 // five-minute refresh would label one-poll-old numbers outdated.
                 staleAfter: Double(refreshSeconds) * 3)
         }
-        bundle.lendUsageBetweenSameAccountProfiles()
         bundle.updatedAt = Date()
 
-        let own = activeProfile.flatMap { bundle.profiles[$0.id] }
-        if autoSwitchProfile, let selected = activeProfile?.id {
-            autoSwitchedTo = AutoSwitch.shownProfile(
-                in: bundle, selectedID: selected, current: autoSwitchedTo,
-                warn: warn, critical: critical)
-        } else {
-            autoSwitchedTo = nil
-        }
-        snapshot = autoSwitchedTo.flatMap { bundle.profiles[$0] } ?? own
+        snapshot = activeProfile.flatMap { bundle.profiles[$0.id] }
         bundle.write()
-        // Kept alongside the bundle so a widget built before per-widget scoping
-        // still finds what it expects.
-        snapshot?.write()
-        // The Claude Code statusline reads this preformatted line — see
-        // StatuslineInstaller. Written whether or not the script is installed;
-        // it costs one tiny file.
-        Statusline.write((snapshot ?? bundle.defaultSnapshot)?.statuslineText
-            ?? "claude usage: no data")
         if bundle.draws(differentlyFrom: lastPublished) {
             lastPublished = bundle
             WidgetCenter.shared.reloadAllTimelines()
         }
-        // Alerts stay about the *selected* profile even while the display has
-        // auto-switched — the switch is cosmetic, the limit crossing is not.
-        if let own { alert(about: own) }
-
-        guard autoCheckUpdates else { return }
-        // Rate-limited internally to four times a day, so calling it every poll
-        // costs nothing.
-        update = await UpdateChecker.shared.check(currentVersion: AppVersion.current)
-        lastUpdateCheck = Date()
-        await installIfFound()
+        if let snapshot { thresholdAlerts(snapshot) }
     }
 
     // MARK: - Alerts
@@ -294,11 +214,7 @@ final class Poller: ObservableObject {
     /// Only ever about the selected profile. A machine with four config folders
     /// on one account would otherwise fire four identical notifications for the
     /// same limit.
-    private func alert(about snapshot: Snapshot) {
-        thresholdAlerts(snapshot)
-        budgetAlerts(snapshot)
-    }
-
+    ///
     /// Fires on an upward crossing only. Falling back — which is what a window
     /// resetting looks like — clears the latch, and that is what re-arms it.
     private func thresholdAlerts(_ snapshot: Snapshot) {
@@ -321,46 +237,6 @@ final class Poller: ObservableObject {
                     body: resets.isEmpty ? "Claude Usage" : "Resets in \(resets)")
             }
         }
-    }
-
-    /// Setting a target is the opt-in — a budget you can see a bar for but never
-    /// hear about is a decoration. Once per period, latched on the period's start
-    /// date so a new day or month re-arms it without any bookkeeping.
-    private func budgetAlerts(_ snapshot: Snapshot) {
-        let calendar = Calendar.current
-        let now = Date()
-
-        if dailyBudget > 0, snapshot.stats.todayCost >= dailyBudget {
-            announce(budget: "daily", period: calendar.startOfDay(for: now),
-                     title: "Daily budget reached",
-                     body: "\(Format.cost(snapshot.stats.todayCost)) of \(Format.cost(dailyBudget)) today")
-        }
-        if monthlyBudget > 0 {
-            let spent = snapshot.monthToDateCost(now: now, calendar: calendar)
-            if spent >= monthlyBudget,
-               let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) {
-                announce(budget: "monthly", period: start,
-                         title: "Monthly budget reached",
-                         body: "\(Format.cost(spent)) of \(Format.cost(monthlyBudget)) this month")
-            }
-        }
-    }
-
-    /// Keyed by profile as well as period. The budget itself is one global
-    /// setting, but the spend it is measured against is per account — so an
-    /// unqualified key means whichever profile crosses first silences every
-    /// other one for the rest of the day. Clearing the latch on a profile switch
-    /// would be worse: it re-arms an account that has already been told, and the
-    /// picker is one click.
-    private func budgetKey(_ budget: String) -> String {
-        "\(selectedProfile)/\(budget)"
-    }
-
-    private func announce(budget: String, period: Date, title: String, body: String) {
-        let key = budgetKey(budget)
-        guard budgetNotified[key] != period else { return }
-        budgetNotified[key] = period
-        Task { await Notifier.shared.post(title: title, body: body) }
     }
 
     private static func rank(_ level: Level) -> Int {

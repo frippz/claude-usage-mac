@@ -95,9 +95,8 @@ extension Snapshot {
         switch error {
         case nil:               return nil
         case "no-token":        return "Sign in with Claude Code"
-        // Reaching this state now means self-refresh couldn't help either: the
-        // refresh token itself is dead, or the credentials live only in the
-        // Keychain (which we won't write to — see TokenRefresher).
+        // Deliberately not refreshed here: only Claude Code writes its own
+        // credentials (see UsageAPI.fetch).
         case "token-expired":   return "Token expired — open Claude Code in this profile"
         case "network":         return "No connection"
         case "bad-json":        return "Unexpected response"

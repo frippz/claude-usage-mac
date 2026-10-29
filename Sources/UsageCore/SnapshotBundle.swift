@@ -15,8 +15,7 @@ public struct SnapshotBundle: Codable, Sendable, Equatable {
     public var profileList: [Profile]
     public var defaultProfileID: String?
     /// The host's poll interval, so a widget's fallback timeline can match it
-    /// rather than guess. Optional because a bundle written by an older build has
-    /// no such key, and a bundle that fails to decode is a grey widget.
+    /// rather than guess.
     public var refreshSeconds: Int?
 
     public init(updatedAt: Date = Date(),
@@ -29,65 +28,6 @@ public struct SnapshotBundle: Codable, Sendable, Equatable {
         self.profileList = profileList
         self.defaultProfileID = defaultProfileID
         self.refreshSeconds = refreshSeconds
-    }
-
-    /// Fills in the rings for a profile whose own token has expired, from a
-    /// profile signed in to the same account whose fetch just succeeded.
-    ///
-    /// The usage endpoint is account-scoped, not config-dir-scoped, so those
-    /// numbers are the same numbers — two config dirs on one account report
-    /// identical utilization and identical reset times. Token *expiry* is not
-    /// shared, though: Claude Code only refreshes the config dir it is running
-    /// in, so a directory you have stopped using sits on hours-old rings for
-    /// good. Its five-hour window elapses and the ring parks at "resets 0m"
-    /// while a sibling shows the real countdown.
-    ///
-    /// Only `token-expired` borrows. `no-token` is left alone deliberately: that
-    /// is also what a denied Keychain prompt looks like, and papering over it
-    /// with someone else's numbers would hide a problem the user can actually
-    /// fix.
-    ///
-    /// ponytail: identity is `email` + `organization`, both required non-nil.
-    /// Both come from `.claude.json` on disk and are never checked against the
-    /// token itself, so this trusts the config file. That is the strongest
-    /// signal available without decoding tokens we deliberately never decode.
-    public mutating func lendUsageBetweenSameAccountProfiles() {
-        let donors = profileList.filter {
-            guard let snapshot = profiles[$0.id] else { return false }
-            return snapshot.error == nil && snapshot.sessionPct != nil
-        }
-        guard !donors.isEmpty else { return }
-
-        for profile in profileList {
-            guard let stuck = profiles[profile.id], stuck.error == "token-expired",
-                  let email = profile.email, let organization = profile.organization,
-                  let donor = donors.first(where: {
-                      $0.email == email && $0.organization == organization
-                  }),
-                  let source = profiles[donor.id]
-            else { continue }
-
-            var lent = stuck
-            lent.sessionPct = source.sessionPct
-            lent.sessionResetsAt = source.sessionResetsAt
-            lent.weeklyPct = source.weeklyPct
-            lent.weeklyResetsAt = source.weeklyResetsAt
-            // Per-model windows and the burn rate are account-scoped by the same
-            // argument as the two above — the donor measured the same account.
-            lent.opusPct = source.opusPct
-            lent.opusResetsAt = source.opusResetsAt
-            lent.sonnetPct = source.sonnetPct
-            lent.sonnetResetsAt = source.sonnetResetsAt
-            lent.extraUsagePct = source.extraUsagePct
-            lent.burnRatePerHour = source.burnRatePerHour
-            // The numbers are now current and correct for this account, so the
-            // warning would be describing a problem the user can no longer see.
-            lent.error = nil
-            lent.stale = false
-            profiles[profile.id] = lent
-            // Transcript stats are genuinely per-config-dir and are left as they
-            // are — the two profiles really did log different token counts.
-        }
     }
 
     /// Whether anything the widget actually draws has moved.
@@ -142,43 +82,38 @@ public struct SnapshotBundle: Codable, Sendable, Equatable {
 }
 
 extension SnapshotBundle {
-    private static let filename = "bundle.json"
+    /// Team-prefixed, which macOS accepts for a Developer-signed app without a
+    /// provisioning profile. Must match both targets' entitlements in
+    /// project.yml.
+    public static let appGroup = "XU3G5KB593.se.frodlund.claude-usage"
 
-    /// Alongside the single-profile `state.json`, which stays as it is so an
-    /// older widget build keeps working after the app updates.
-    public static var locations: [URL] {
-        Snapshot.locations.map {
-            $0.deletingLastPathComponent().appendingPathComponent(filename)
-        }
-    }
-
-    static var widgetContainer: URL? {
-        Snapshot.widgetContainer?
-            .deletingLastPathComponent()
-            .appendingPathComponent(filename)
+    /// The one place the host writes and the widget reads. Nil when the process
+    /// lacks the App Group entitlement — an unsigned `swift run`, for one.
+    public static var location: URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: appGroup)?
+            .appendingPathComponent("bundle.json")
     }
 
     @discardableResult
-    public func write() -> Bool {
+    public func write(to url: URL? = location) -> Bool {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(self) else { return false }
-
-        var wrote = false
-        for url in Self.locations + [Self.widgetContainer].compactMap({ $0 }) {
-            try? FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            if (try? data.write(to: url, options: .atomic)) != nil { wrote = true }
-        }
-        return wrote
+        guard let url, let data = try? encoder.encode(self) else { return false }
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        // Atomic so the widget can never read a half-written file; owner-only
+        // because it carries account emails and config paths.
+        guard (try? data.write(to: url, options: .atomic)) != nil
+        else { return false }
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        return true
     }
 
-    public static func read() -> SnapshotBundle? {
+    public static func read(from url: URL? = location) -> SnapshotBundle? {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return (locations + [widgetContainer].compactMap { $0 })
-            .compactMap { try? Data(contentsOf: $0) }
-            .compactMap { try? decoder.decode(SnapshotBundle.self, from: $0) }
-            .max { $0.updatedAt < $1.updatedAt }
+        guard let url, let data = try? Data(contentsOf: url) else { return nil }
+        return try? decoder.decode(SnapshotBundle.self, from: data)
     }
 }

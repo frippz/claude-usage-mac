@@ -19,8 +19,6 @@ struct ClaudeUsageApp: App {
     @AppStorage(SettingsKey.menuBarCustomColor) private var customColor = "#22c55e"
     @AppStorage(SettingsKey.menuBarMetric) private var menuBarMetric = Metric.session.rawValue
     @AppStorage(SettingsKey.menuBarStyle) private var menuBarStyle = MenuBarStyle.percentage.rawValue
-    @AppStorage(SettingsKey.dailyBudget) private var dailyBudget = 0.0
-    @AppStorage(SettingsKey.monthlyBudget) private var monthlyBudget = 0.0
 
     private var metric: Metric { Metric(rawValue: menuBarMetric) ?? .session }
     private var style: MenuBarStyle { MenuBarStyle(rawValue: menuBarStyle) ?? .percentage }
@@ -29,9 +27,6 @@ struct ClaudeUsageApp: App {
         MenuBarExtra {
             MenuView(snapshot: poller.snapshot,
                      isRefreshing: poller.isRefreshing,
-                     update: poller.update,
-                     dailyBudget: dailyBudget,
-                     monthlyBudget: monthlyBudget,
                      refresh: poller.refreshNow)
         } label: {
             // One or the other, never both: a MenuBarExtra label is happiest as a

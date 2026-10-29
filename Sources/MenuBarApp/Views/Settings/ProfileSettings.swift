@@ -5,7 +5,6 @@ struct ProfileSettings: View {
     @ObservedObject var poller: Poller
 
     @AppStorage(SettingsKey.selectedProfile) private var selectedProfile = ""
-    @AppStorage(SettingsKey.autoSwitchProfile) private var autoSwitch = false
     @State private var extraPaths = ProfileStore.savedExtraPaths()
 
     var body: some View {
@@ -69,24 +68,12 @@ struct ProfileSettings: View {
                 }
 
                 if poller.profiles.count > 1 {
-                    Text("Each profile is a separate Claude account. Limits, tokens and history are tracked independently.")
+                    Text("Each profile is a separate Claude account. Their limits are tracked independently.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             } header: {
                 Text("Profile")
-            }
-
-            Section {
-                Toggle("Switch on session limit", isOn: $autoSwitch)
-                    // End the current wait so a flipped toggle shows within
-                    // seconds, not at the end of a ten-minute sleep.
-                    .onChange(of: autoSwitch) { _, _ in poller.wakeNow() }
-                Text("When this account's 5-hour window reaches the red threshold, the menu bar shows the account with the most session headroom instead, and returns once the window resets. Display only — it never changes which account is signed in, and alerts stay about the account picked above.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Auto-switch")
             }
         }
         .formStyle(.grouped)

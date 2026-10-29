@@ -25,10 +25,6 @@ public struct Profile: Codable, Sendable, Equatable, Identifiable {
         self.plan = plan
     }
 
-    public var projectsDirectory: URL {
-        configDir.appendingPathComponent("projects", isDirectory: true)
-    }
-
     public var credentialsFile: URL {
         configDir.appendingPathComponent(".credentials.json")
     }

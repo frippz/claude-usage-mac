@@ -1,14 +1,13 @@
 import Foundation
 import UsageCore
 
-// Smoke test for the whole data path with no UI involved — CI runs this, and
-// it's the fastest way to compare numbers against the Stream Deck plugin.
+// Smoke test for the whole data path with no UI involved — CI runs this.
+// Read-only: it reads credentials and calls the usage endpoint, nothing else.
 //
 //   usage-cli                    the default profile, pretty
 //   usage-cli --profiles         list discovered profiles and exit
 //   usage-cli --profile <path>   a specific config dir
 //   usage-cli --json             the snapshot as the widget will see it
-//   usage-cli --write            also write it to disk
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 let flags = Set(arguments)
@@ -46,11 +45,6 @@ if let profile = selected {
     snapshot = Snapshot(usage: nil, error: "no-profile")
 }
 
-if flags.contains("--write") {
-    let ok = snapshot.write()
-    FileHandle.standardError.write(Data("write: \(ok ? "ok" : "failed")\n".utf8))
-}
-
 if flags.contains("--json") {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
@@ -80,19 +74,6 @@ if flags.contains("--json") {
     }
     if let extra = s.extraUsagePct {
         print("extra:   \(Format.percent(extra))")
-    }
-    print("today:   \(Format.tokens(s.stats.todayTokens))  \(Format.cost(s.stats.todayCost))")
-    print("week:    \(Format.tokens(s.stats.weekTokens))  \(Format.cost(s.stats.weekCost))")
-    print("session: \(Format.tokens(s.stats.sessionTokens))  \(Format.cost(s.stats.sessionCost))")
-    print("month:   \(Format.cost(s.monthToDateCost()))")
-    for model in s.stats.models {
-        print("  \(model.name.padding(toLength: 8, withPad: " ", startingAt: 0))  \(Format.tokens(model.tokens))  \(Format.cost(model.cost))")
-    }
-    for project in s.stats.projects.prefix(5) {
-        print("  \(project.name.padding(toLength: min(32, max(project.name.count, 24)), withPad: " ", startingAt: 0))  \(Format.tokens(project.tokens))")
-    }
-    if !s.stats.ok, let profile = selected {
-        print("note:    \(profile.projectsDirectory.path) not readable")
     }
 }
 

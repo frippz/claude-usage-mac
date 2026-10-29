@@ -1,16 +1,15 @@
 import Foundation
 
-/// Everything needed to watch one profile: its API client, its transcript
-/// scanner, and its history file.
+/// Everything needed to watch one profile: its API client and its burn-rate
+/// samples.
 ///
-/// Grouping them is what keeps profiles from leaking into each other — the API
-/// cache and the scanner's per-file offsets are both single-profile state, and a
-/// shared instance would serve whichever account touched it last.
+/// One per profile is what keeps profiles from leaking into each other — the API
+/// cache is single-profile state, and a shared instance would serve whichever
+/// account touched it last.
 public actor ProfileMonitor {
     public let profile: Profile
 
     private let api: UsageAPI
-    private let scanner: TranscriptScanner
 
     /// Recent five-hour readings, oldest first, for the burn rate.
     ///
@@ -26,11 +25,9 @@ public actor ProfileMonitor {
     public init(profile: Profile) {
         self.profile = profile
         self.api = UsageAPI(profile: profile)
-        self.scanner = TranscriptScanner(profile: profile)
     }
 
-    /// One poll. The API call and the transcript scan run concurrently, since one
-    /// is network-bound and the other disk-bound.
+    /// One poll.
     public func snapshot(
         userAgent: String = UsageAPI.defaultUserAgent,
         force: Bool = false,
@@ -39,15 +36,13 @@ public actor ProfileMonitor {
         label: String? = nil,
         staleAfter: TimeInterval = 180
     ) async -> Snapshot {
-        async let usage = api.fetch(userAgent: userAgent, force: force, staleAfter: staleAfter)
-        let stats = await scanner.scan(force: force)
-        let result = await usage
+        let result = await api.fetch(userAgent: userAgent, force: force, staleAfter: staleAfter)
 
         // The snapshot's clock is when its numbers were fetched, not when this
         // poll ran — during an outage "updated 2s ago" next to hours-old
         // percentages was a lie the stale flag then had to contradict.
         var snapshot = Snapshot(updatedAt: result.fetchedAt ?? Date(),
-                                usage: result.data, stats: stats,
+                                usage: result.data,
                                 error: result.error, stale: result.stale,
                                 warn: warn, critical: critical)
         snapshot.profileLabel = label
@@ -94,12 +89,5 @@ public actor ProfileMonitor {
         // Under a point an hour there is nothing to project, and rounding would
         // make it zero regardless.
         return rate < 1 ? nil : rate.rounded()
-    }
-
-    /// Reads every transcript, not just the scan window, to seed history on a
-    /// fresh install. Runs once ever, and callers fire it after the first refresh
-    /// so the UI isn't waiting on gigabytes.
-    public func backfillHistory() async {
-        await scanner.backfillHistory()
     }
 }

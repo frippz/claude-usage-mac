@@ -3,8 +3,7 @@ import XCTest
 
 /// Renders every view at every size, colour scheme, and data state to PNG.
 ///
-/// This is the whole point of the target: the project is developed on Windows,
-/// so CI uploading these images is the only way to actually look at the UI.
+/// CI uploads these images, so the UI can be reviewed without launching it.
 /// Assertions here are thin on purpose — a human (or a model) reads the output.
 @MainActor
 final class RenderSnapshotTests: XCTestCase {
@@ -32,15 +31,7 @@ final class RenderSnapshotTests: XCTestCase {
     // MARK: - States worth looking at
 
     private static var states: [(name: String, snapshot: Snapshot?)] {
-        var busy = LogStats()
-        busy.todayTokens = 12_400_000
-        busy.todayCost = 148.20
-        busy.weekTokens = 1_240_000_000
-        busy.weekCost = 2_410.50
-        busy.sessionTokens = 940_000
-        busy.sessionCost = 12.05
-
-        return [
+        [
             ("typical", .preview),
             // The majority plan: no Opus or Sonnet windows, no measured burn
             // rate. The layout has to look deliberate without them, not gappy.
@@ -54,11 +45,10 @@ final class RenderSnapshotTests: XCTestCase {
                     fiveHour: UsageNode(utilization: 100,
                                         resetsAt: Date().addingTimeInterval(4 * 3600 + 59 * 60)),
                     sevenDay: UsageNode(utilization: 100,
-                                        resetsAt: Date().addingTimeInterval(6 * 86400 + 23 * 3600))),
-                stats: busy)),
+                                        resetsAt: Date().addingTimeInterval(6 * 86400 + 23 * 3600))))),
             ("profile", {
                 var scoped = Snapshot.preview
-                scoped.profileLabel = "Work — saeed@acme.com"
+                scoped.profileLabel = "Work — me@example.com"
                 return scoped
             }()),
             ("no-token", Snapshot(usage: nil, error: "no-token")),
@@ -89,29 +79,10 @@ final class RenderSnapshotTests: XCTestCase {
 
     // MARK: - Tests
 
-    /// Project-scoped widgets are a different layout entirely — no gauges, since
-    /// limits are account-level — so they get their own pass.
-    func testRenderProjectScopedWidgets() throws {
-        let project = try XCTUnwrap(Snapshot.preview.stats.projects.first)
-        for face in Face.allCases {
-            for scheme in [ColorScheme.light, .dark] {
-                let view = UsageWidgetView(
-                    snapshot: .preview, project: project,
-                    scopeLabel: "Work — saeed@acme.com · \(project.name)", face: face)
-                    .padding(face == .small ? 12 : 16)
-                    .frame(width: face.size.width, height: face.size.height)
-                    .background(scheme == .dark ? Color.black : Color.white)
-                    .environment(\.colorScheme, scheme)
-
-                try render(view, to: "widget-\(face.rawValue)-project-\(scheme.name).png")
-            }
-        }
-    }
-
     /// The states that used to render as "someone else's numbers, silently".
     func testRenderWidgetProblems() throws {
         let cases: [(String, WidgetProblem, String?)] = [
-            ("missing-profile", .profileMissing, "Work — saeed@acme.com"),
+            ("missing-profile", .profileMissing, "Work — me@example.com"),
             ("no-data", .noData, nil),
         ]
         for (name, problem, scope) in cases {
@@ -138,33 +109,6 @@ final class RenderSnapshotTests: XCTestCase {
                         .environment(\.colorScheme, scheme)
 
                     try render(view, to: "widget-\(face.rawValue)-\(state.name)-\(scheme.name).png")
-                }
-            }
-        }
-    }
-
-    /// Every configured widget style at every size, in both schemes, at a
-    /// typical and a critical state — the styles recolour on severity, and the
-    /// only way to review any of it is these PNGs.
-    func testRenderStyledWidgetFaces() throws {
-        let states: [(String, Snapshot)] = [
-            ("typical", .preview),
-            ("critical", Self.at(session: 97, weekly: 88)),
-        ]
-        for style in FaceStyle.allCases where style != .standard {
-            for face in Face.allCases {
-                for (state, snapshot) in states {
-                    for scheme in [ColorScheme.light, .dark] {
-                        let view = UsageWidgetView(snapshot: snapshot, face: face, style: style)
-                            .padding(face == .small ? 12 : 16)
-                            .frame(width: face.size.width, height: face.size.height)
-                            // The same backdrop WidgetKit composes under this style.
-                            .background(style.backdrop)
-                            .background(scheme == .dark ? Color.black : Color.white)
-                            .environment(\.colorScheme, scheme)
-                        try render(view,
-                                   to: "widget-\(face.rawValue)-\(style.rawValue)-\(state)-\(scheme.name).png")
-                    }
                 }
             }
         }
@@ -214,26 +158,6 @@ final class RenderSnapshotTests: XCTestCase {
                     .environment(\.colorScheme, scheme)
 
                 try render(view, to: "menu-\(state.name)-\(scheme.name).png")
-            }
-        }
-    }
-
-    /// Budgets are off by default, so the rows above never appear in the states
-    /// pass. One render each for a comfortable budget and a blown one — the bar
-    /// has to be legible at both ends.
-    func testRenderMenuPopoverWithBudgets() throws {
-        let cases: [(String, Double, Double)] = [
-            ("under", 20, 500),
-            ("over", 2, 10),
-        ]
-        for (name, daily, monthly) in cases {
-            for scheme in [ColorScheme.light, .dark] {
-                let view = MenuView(snapshot: .preview, isRefreshing: false,
-                                    dailyBudget: daily, monthlyBudget: monthly)
-                    .background(scheme == .dark ? Color.black : Color.white)
-                    .environment(\.colorScheme, scheme)
-
-                try render(view, to: "menu-budget-\(name)-\(scheme.name).png")
             }
         }
     }

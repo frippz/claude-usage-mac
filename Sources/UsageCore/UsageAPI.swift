@@ -83,11 +83,9 @@ public actor UsageAPI {
     private var lastFailError: String?
 
     private let profile: Profile
-    private let refresher: TokenRefresher
 
     public init(profile: Profile) {
         self.profile = profile
-        self.refresher = TokenRefresher(credentialsFile: profile.credentialsFile)
     }
 
     private var isStale: Bool {
@@ -107,14 +105,10 @@ public actor UsageAPI {
                                fetchedAt: cached != nil ? cachedAt : nil)
         }
 
-        var creds = CredentialStore.read(for: profile)
-        if creds.token == nil || creds.expired {
-            // An expired or missing access token no longer waits for Claude Code
-            // — refresh it ourselves from the rotating refresh token. File-backed
-            // profiles only; Keychain-backed ones keep the old behavior because
-            // there is nowhere safe to persist the rotation (see TokenRefresher).
-            creds = await refresher.refresh(force: force) ?? creds
-        }
+        // Read-only by design: an expired token waits for Claude Code to refresh
+        // it. Refreshing here would rotate the single-use refresh token behind
+        // Claude Code's back, and a race between the two logs the CLI out.
+        let creds = CredentialStore.read(for: profile)
         guard let token = creds.token else { return fail("no-token") }
         guard !creds.expired else { return fail("token-expired") }
 
@@ -131,17 +125,8 @@ public actor UsageAPI {
         request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
 
         do {
-            var (body, response) = try await URLSession.shared.data(for: request)
-            var status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            if status == 401,
-               let fresh = await refresher.refresh(force: force, badToken: token),
-               let newToken = fresh.token, newToken != token {
-                // The file said the token was valid but the server disagrees
-                // (clock skew, revocation) — refresh once and retry.
-                request.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
-                (body, response) = try await URLSession.shared.data(for: request)
-                status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            }
+            let (body, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             guard (200..<300).contains(status) else { return fail("http-\(status)") }
             guard let parsed = Self.parse(body) else { return fail("bad-json") }
 

@@ -137,112 +137,9 @@ struct LimitRow: View {
     }
 }
 
-/// Spend against a target the user set. Only ever drawn when there is one — a
-/// budget row reading "$3.40 of $0" would be worse than no row.
-struct BudgetRow: View {
-    let label: String
-    let spent: Double
-    let target: Double
-    var warn: Double = 50
-    var critical: Double = 80
-
-    private var fraction: Double { target > 0 ? spent / target : 0 }
-    private var level: Level {
-        Level.of(fraction * 100, warn: warn, critical: critical)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 8) {
-                Text(label)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 8)
-                Text("\(Format.cost(spent)) of \(Format.cost(target))")
-                    .monospacedDigit()
-            }
-            .font(.system(size: 11))
-            .lineLimit(1)
-            MiniBar(fraction: fraction, tint: level.tint, height: 4)
-        }
-    }
-}
-
-/// One "Today  1.2M  $3.40" line.
-struct StatRow: View {
-    let label: String
-    let tokens: Int
-    let cost: Double
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            Text(Format.tokens(tokens))
-                .monospacedDigit()
-            Text(Format.cost(cost))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                // Fixed width keeps the cost column aligned across rows.
-                .frame(width: 52, alignment: .trailing)
-        }
-        .font(.system(size: 11))
-        .lineLimit(1)
-    }
-}
-
 extension Snapshot {
     /// Placeholder for widget galleries and snapshot tests.
     static var preview: Snapshot {
-        var stats = LogStats()
-        stats.todayTokens = 1_240_000
-        stats.todayCost = 3.40
-        stats.weekTokens = 8_430_000
-        stats.weekCost = 24.10
-        stats.sessionTokens = 341_000
-        stats.sessionCost = 1.02
-        let today = Calendar.current.startOfDay(for: Date())
-        func recentDays(_ peak: Int) -> [DayUsage] {
-            (0..<7).reversed().compactMap { offset in
-                guard let day = Calendar.current.date(byAdding: .day, value: -offset, to: today)
-                else { return nil }
-                let scale = [0.4, 0.9, 0.2, 1.0, 0.55, 0.0, 0.7][offset]
-                return DayUsage(day: day, tokens: Int(Double(peak) * scale),
-                                cost: Double(peak) * scale / 1e6 * 3)
-            }
-        }
-        stats.projects = [
-            ProjectUsage(name: "ai-job-hunter-assistant-app", tokens: 4_100_000, cost: 11.80,
-                         todayTokens: 720_000, todayCost: 2.05, days: recentDays(900_000)),
-            ProjectUsage(name: "claude-usage-streamdeck-plugin", tokens: 2_600_000, cost: 7.40,
-                         todayTokens: 310_000, todayCost: 0.90, days: recentDays(600_000)),
-            ProjectUsage(name: "tokensaver-streamdeck-plugin", tokens: 1_100_000, cost: 3.10,
-                         todayTokens: 140_000, todayCost: 0.40, days: recentDays(300_000)),
-            ProjectUsage(name: "dotfiles", tokens: 630_000, cost: 1.80),
-        ]
-        stats.models = [
-            ModelUsage(name: "Opus", tokens: 6_100_000, cost: 19.40,
-                       todayTokens: 910_000, todayCost: 2.70),
-            ModelUsage(name: "Sonnet", tokens: 2_050_000, cost: 4.30,
-                       todayTokens: 300_000, todayCost: 0.65),
-            ModelUsage(name: "Haiku", tokens: 280_000, cost: 0.40,
-                       todayTokens: 30_000, todayCost: 0.05),
-        ]
-        // Uneven, with idle days, so charts get reviewed against realistic shape
-        // rather than a smooth ramp. Ninety-two days for the heatmap's quarter;
-        // the final fortnight is byte-for-byte what it was before the heatmap
-        // existed, so the bar chart's already-reviewed shape doesn't move.
-        let older = (0..<78).map {
-            [0, 310, 0, 1_900, 640, 2_400, 120, 0, 980, 1_500, 0, 2_100, 760][$0 % 13]
-        }
-        let daily = older
-            + [820, 0, 1_400, 2_050, 640, 0, 0, 1_180, 3_400, 2_900, 410, 1_760, 2_240, 1_240]
-        stats.days = daily.enumerated().compactMap { offset, thousands in
-            guard let day = Calendar.current.date(
-                byAdding: .day, value: offset - (daily.count - 1), to: today) else { return nil }
-            return DayUsage(day: day, tokens: thousands * 1_000,
-                            cost: Double(thousands) * 0.0029)
-        }
         var snapshot = Snapshot(
             usage: UsageData(
                 fiveHour: UsageNode(utilization: 42,
@@ -252,8 +149,7 @@ extension Snapshot {
                 sevenDayOpus: UsageNode(utilization: 61,
                                         resetsAt: Date().addingTimeInterval(4 * 86400 + 6 * 3600)),
                 sevenDaySonnet: UsageNode(utilization: 12,
-                                          resetsAt: Date().addingTimeInterval(4 * 86400 + 6 * 3600))),
-            stats: stats)
+                                          resetsAt: Date().addingTimeInterval(4 * 86400 + 6 * 3600))))
         snapshot.burnRatePerHour = 9
         return snapshot
     }

@@ -20,23 +20,6 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Format.until(now.addingTimeInterval(-9999), now: now), "0m")
     }
 
-    func testTokens() {
-        XCTAssertEqual(Format.tokens(0), "0")
-        XCTAssertEqual(Format.tokens(999), "999")
-        XCTAssertEqual(Format.tokens(1_000), "1.0K")
-        XCTAssertEqual(Format.tokens(12_345), "12K")
-        XCTAssertEqual(Format.tokens(1_200_000), "1.2M")
-        XCTAssertEqual(Format.tokens(17_000_000), "17M")
-        XCTAssertEqual(Format.tokens(1_200_000_000), "1.2B")
-    }
-
-    func testCost() {
-        XCTAssertEqual(Format.cost(0), "$0.00")
-        XCTAssertEqual(Format.cost(3.4), "$3.40")
-        XCTAssertEqual(Format.cost(150), "$150")
-        XCTAssertEqual(Format.cost(2_500), "$2.5k")
-    }
-
     func testPercent() {
         XCTAssertEqual(Format.percent(nil), "--")
         XCTAssertEqual(Format.percent(0), "0%")
@@ -103,9 +86,6 @@ final class UsagePayloadTests: XCTestCase {
 final class SnapshotTests: XCTestCase {
 
     func testSurvivesARoundTripThroughJson() throws {
-        var stats = LogStats()
-        stats.todayTokens = 123
-        stats.todayCost = 4.56
         // Whole seconds on purpose: .iso8601 drops fractional seconds, which is
         // fine in practice (freshness is compared at second scale) but would
         // make an exact round-trip assertion flaky.
@@ -114,7 +94,6 @@ final class SnapshotTests: XCTestCase {
             usage: UsageData(
                 fiveHour: UsageNode(utilization: 42, resetsAt: Date(timeIntervalSince1970: 1_770_000_000)),
                 sevenDay: UsageNode(utilization: 18, resetsAt: nil)),
-            stats: stats,
             error: "http-429",
             stale: true)
 
@@ -134,21 +113,28 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(snapshot.error, "no-token")
     }
 
-    func testAlwaysHasSomewhereToWrite() {
-        // App Groups may be unavailable, Application Support never is.
-        XCTAssertFalse(Snapshot.locations.isEmpty)
+    func testBundleRoundTripsThroughItsFileOwnerOnly() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("bundle-\(UUID().uuidString)/bundle.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let original = SnapshotBundle(
+            updatedAt: Date(timeIntervalSince1970: 1_770_000_000),
+            profiles: ["/home/me/.claude": Snapshot(
+                updatedAt: Date(timeIntervalSince1970: 1_770_000_000),
+                usage: UsageData(fiveHour: UsageNode(utilization: 42, resetsAt: nil),
+                                 sevenDay: nil))],
+            refreshSeconds: 60)
+
+        XCTAssertTrue(original.write(to: url))
+        XCTAssertEqual(SnapshotBundle.read(from: url), original)
+        // It carries account emails and config paths.
+        let mode = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int
+        XCTAssertEqual(mode, 0o600)
     }
 
-    func testHostWritesIntoTheWidgetsOwnContainerWhenItExists() throws {
-        // nil on a machine that has never run the widget — including CI. Skipping
-        // that is the point: creating the container ourselves would break it.
-        guard let url = Snapshot.widgetContainer else { return }
-
-        // The sandboxed widget reads this exact path as its Application Support,
-        // which is what makes the widget work without an App Group.
-        XCTAssertTrue(
-            url.path.contains("Library/Containers/\(Snapshot.widgetBundleID)/Data"),
-            "not inside the widget container: \(url.path)")
-        XCTAssertTrue(url.path.hasSuffix("Application Support/ClaudeUsage/state.json"))
+    func testNoLocationMeansNoWriteAndNoRead() {
+        XCTAssertFalse(SnapshotBundle().write(to: nil))
+        XCTAssertNil(SnapshotBundle.read(from: nil))
     }
 }

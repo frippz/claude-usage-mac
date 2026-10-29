@@ -1,7 +1,7 @@
 name: ClaudeUsage
 
 options:
-  bundleIdPrefix: com.saeedkolivand
+  bundleIdPrefix: se.frodlund
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -12,12 +12,15 @@ settings:
     SWIFT_VERSION: "5.9"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-    # Ad-hoc: builds on CI with no certificate and still produces a runnable app.
-    # Real signing happens on a Mac with an identity; see build.sh.
+    # A stable team identity, not ad-hoc: the widget extension is identified by
+    # its signature, so ad-hoc signing made every rebuild a new extension to
+    # macOS. Manual style needs no provisioning profile, because the only
+    # entitlements are the sandbox and a team-prefixed App Group. CI overrides
+    # this with CODE_SIGNING_ALLOWED=NO.
     CODE_SIGN_STYLE: Manual
-    CODE_SIGN_IDENTITY: "-"
-    DEVELOPMENT_TEAM: ""
-    ENABLE_HARDENED_RUNTIME: NO
+    CODE_SIGN_IDENTITY: "Apple Development"
+    DEVELOPMENT_TEAM: XU3G5KB593
+    ENABLE_HARDENED_RUNTIME: YES
     SWIFT_STRICT_CONCURRENCY: minimal
 
 targets:
@@ -36,7 +39,7 @@ targets:
         codeSign: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.saeedkolivand.claude-usage
+        PRODUCT_BUNDLE_IDENTIFIER: se.frodlund.claude-usage
         PRODUCT_NAME: Claude Usage
         GENERATE_INFOPLIST_FILE: YES
         # No Dock icon, no menu bar — this app is only its status item. The icon
@@ -52,7 +55,7 @@ targets:
         # Keychain, so it is deliberately not sandboxed.
         com.apple.security.app-sandbox: false
         com.apple.security.application-groups:
-          - group.com.saeedkolivand.claude-usage
+          - XU3G5KB593.se.frodlund.claude-usage
 
   ClaudeUsageWidget:
     type: app-extension
@@ -63,7 +66,7 @@ targets:
       - Sources/Widget
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.saeedkolivand.claude-usage.widget
+        PRODUCT_BUNDLE_IDENTIFIER: se.frodlund.claude-usage.widget
         PRODUCT_NAME: ClaudeUsageWidget
     info:
       path: Sources/Widget/Info.plist
@@ -78,11 +81,11 @@ targets:
       path: Sources/Widget/ClaudeUsageWidget.entitlements
       properties:
         # Required, not optional: macOS never registers an unsandboxed app
-        # extension, so the widget simply never appears in the gallery. The host
-        # writes into this extension's own container — see Snapshot.widgetContainer.
+        # extension, so the widget simply never appears in the gallery. It reads
+        # what the host writes to the shared App Group — see SnapshotBundle.
         com.apple.security.app-sandbox: true
         com.apple.security.application-groups:
-          - group.com.saeedkolivand.claude-usage
+          - XU3G5KB593.se.frodlund.claude-usage
 
   SnapshotTests:
     type: bundle.unit-test
@@ -95,17 +98,16 @@ targets:
       # Settings renders live Poller state; App.swift stays out, its @main would
       # collide with the test bundle's entry point. The rest come along because
       # Poller or the settings panes reference them, not because anything renders
-      # them: Updater for UpdateState, Notifier for the threshold alerts,
-      # MenuBarIcon for the drawn label, Hotkey for the shortcut picker.
+      # them: Notifier for the threshold alerts, MenuBarIcon for the drawn label,
+      # Hotkey for the shortcut picker.
       - Sources/MenuBarApp/Poller.swift
-      - Sources/MenuBarApp/Updater.swift
       - Sources/MenuBarApp/Notifier.swift
       - Sources/MenuBarApp/MenuBarIcon.swift
       - Sources/MenuBarApp/Hotkey.swift
       - Tests/SnapshotTests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.saeedkolivand.claude-usage.snapshots
+        PRODUCT_BUNDLE_IDENTIFIER: se.frodlund.claude-usage.snapshots
         # A logic test with no host app — ImageRenderer needs no running NSApp.
         CODE_SIGNING_ALLOWED: NO
 

@@ -10,20 +10,15 @@ enum SettingsKey {
     static let menuBarColorMode = "menuBarColorMode"
     static let menuBarCustomColor = "menuBarCustomColor"
     static let selectedProfile = "selectedProfile"
-    static let autoSwitchProfile = "autoSwitchProfile"
-    static let autoCheckUpdates = "autoCheckUpdates"
     static let refreshInterval = "refreshInterval"
     static let notifyThreshold = "notifyThreshold"
-    static let dailyBudget = "dailyBudget"
-    static let monthlyBudget = "monthlyBudget"
     static let hotkey = "hotkey"
 }
 
 /// How often the app polls. Seconds, because that is what the sleep takes.
 ///
 /// A minute is the default and the floor: the usage endpoint is cached for 55
-/// seconds anyway, so a tighter interval would re-read transcripts to redraw the
-/// same numbers.
+/// seconds anyway, so a tighter interval would only redraw the same numbers.
 enum RefreshInterval: Int, CaseIterable, Identifiable {
     case minute = 60
     case twoMinutes = 120
