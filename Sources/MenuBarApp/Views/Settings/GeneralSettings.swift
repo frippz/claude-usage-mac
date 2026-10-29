@@ -6,7 +6,6 @@ struct GeneralSettings: View {
 
     @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = 60
     @AppStorage(SettingsKey.hotkey) private var hotkey = HotkeyChoice.off.rawValue
-    @AppStorage(SettingsKey.userAgent) private var userAgent = UsageAPI.defaultUserAgent
     /// Read once when the view is first built rather than on every redraw — an
     /// install cannot change source while the app is running.
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -44,13 +43,6 @@ struct GeneralSettings: View {
                     HotkeyManager.shared.apply(HotkeyChoice(rawValue: new) ?? .off)
                 }
                 Text("Opens the menu from anywhere. If another app already owns the combination, this one silently loses it — pick a different one.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                TextField("User-Agent", text: $userAgent)
-                Text("The usage endpoint rate-limits clients that don't identify as Claude Code. Change this only if the version string goes stale.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

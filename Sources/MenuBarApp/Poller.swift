@@ -20,7 +20,6 @@ final class Poller: ObservableObject {
 
     @AppStorage(SettingsKey.warn) private var warn = 50.0
     @AppStorage(SettingsKey.critical) private var critical = 80.0
-    @AppStorage(SettingsKey.userAgent) private var userAgent = UsageAPI.defaultUserAgent
     @AppStorage(SettingsKey.selectedProfile) private var selectedProfile = ""
     @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = 60
     @AppStorage(SettingsKey.notifyThreshold) private var notifyThreshold = true
@@ -192,7 +191,7 @@ final class Poller: ObservableObject {
         for profile in profiles {
             guard let monitor = monitors[profile.id] else { continue }
             bundle.profiles[profile.id] = await monitor.snapshot(
-                userAgent: userAgent, force: force, warn: warn, critical: critical,
+                force: force, warn: warn, critical: critical,
                 label: labelled ? profile.displayName : nil,
                 // Three polls, whatever the interval — otherwise picking a
                 // five-minute refresh would label one-poll-old numbers outdated.

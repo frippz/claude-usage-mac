@@ -29,14 +29,13 @@ public actor ProfileMonitor {
 
     /// One poll.
     public func snapshot(
-        userAgent: String = UsageAPI.defaultUserAgent,
         force: Bool = false,
         warn: Double = 50,
         critical: Double = 80,
         label: String? = nil,
         staleAfter: TimeInterval = 180
     ) async -> Snapshot {
-        let result = await api.fetch(userAgent: userAgent, force: force, staleAfter: staleAfter)
+        let result = await api.fetch(force: force, staleAfter: staleAfter)
 
         // The snapshot's clock is when its numbers were fetched, not when this
         // poll ran — during an outage "updated 2s ago" next to hours-old

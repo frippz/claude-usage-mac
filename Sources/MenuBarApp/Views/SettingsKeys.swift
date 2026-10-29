@@ -3,7 +3,6 @@ import Foundation
 enum SettingsKey {
     static let warn = "warnThreshold"
     static let critical = "criticalThreshold"
-    static let userAgent = "userAgent"
     static let menuBarMetric = "menuBarMetric"
     static let menuBarStyle = "menuBarStyle"
     static let menuBarAppearance = "menuBarAppearance"

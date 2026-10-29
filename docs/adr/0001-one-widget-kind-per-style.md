@@ -1,5 +1,9 @@
 # One widget kind per face style
 
+**Superseded in this fork:** the styled faces were removed, and the fork ships a
+single widget kind, `se.frodlund.claude-usage.widget`. The bundle ID changed
+anyway, so no placed widget carried over.
+
 Face styles were only discoverable through Edit Widget's Style dropdown, so the
 gallery advertised a single widget and five looks went unseen. Each style is now
 its own widget kind (`…widget.terminal`, `…widget.lcd`, …) so the gallery lists

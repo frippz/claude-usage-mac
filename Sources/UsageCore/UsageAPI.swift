@@ -58,7 +58,9 @@ public struct FetchResult: Sendable {
 /// fetched most recently to whoever asked next.
 public actor UsageAPI {
     public static let endpoint = URL(string: "https://api.anthropic.com/api/oauth/usage")!
-    public static let defaultUserAgent = "claude-code/2.0.31"
+    /// Says who is calling. Tested 2026-10-29: the endpoint answers this the
+    /// same as a claude-code User-Agent, so there is no need to pose as one.
+    public static var userAgent: String { "claude-usage-mac/\(AppVersion.current)" }
 
     private static let cacheTTL: TimeInterval = 55
 
@@ -92,7 +94,7 @@ public actor UsageAPI {
         cached != nil && Date().timeIntervalSince(cachedAt) > staleAfter
     }
 
-    public func fetch(userAgent: String = defaultUserAgent, force: Bool = false,
+    public func fetch(force: Bool = false,
                       staleAfter: TimeInterval = 180) async -> FetchResult {
         let now = Date()
         self.staleAfter = staleAfter
@@ -117,10 +119,7 @@ public actor UsageAPI {
         request.timeoutInterval = 15
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")
-        // Load-bearing: without a claude-code User-Agent the endpoint serves an
-        // aggressively rate-limited bucket and returns persistent 429s.
-        request.setValue(userAgent.isEmpty ? Self.defaultUserAgent : userAgent,
-                         forHTTPHeaderField: "User-Agent")
+        request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
 
