@@ -17,16 +17,16 @@ Read what the surface under review needs, before judging anything. These files
 own the rules; read them rather than relying on anything restated here:
 
 - `GLOSSARY.md`: domain terms. UI copy must use them.
-- `README.md`: what is built and what the app reads. `AGENTS.md` (Scope):
-  what was removed on purpose.
+- `README.md`: what is built and what the app reads.
+  [Scope](../../AGENTS.md#scope): what was removed on purpose.
 - `docs/adr/`: grep the titles for the area under review.
-- `CODING_STANDARDS.md` (Interface and accessibility, What a defect looks
-  like here).
+- [Interface and accessibility](../../CODING_STANDARDS.md#interface-and-accessibility)
+  and [What a defect looks like here](../../CODING_STANDARDS.md#what-a-defect-looks-like-here).
 - `git log --oneline -- <files under review>`: what was already changed or
   fixed.
 
 Decisions already taken are not findings. If a heuristic argues against an
-accepted ADR or the scope in `AGENTS.md`, say so in one line under _Open
+accepted ADR or the scope, say so in one line under _Open
 questions_; don't relitigate it as a P1. Don't propose removed or unbuilt
 features, such as cost tracking or history, as UX fixes.
 
@@ -48,10 +48,9 @@ A rendered view is the only honest way to judge hierarchy, contrast,
 truncation and density.
 
 1. Look in `snapshots/` for PNGs of the surface. If they are missing or
-   older than the files under review, render them:
-   `xcodegen generate`, then
-   `xcodebuild test -project ClaudeUsage.xcodeproj -scheme SnapshotTests`,
-   with Bash `run_in_background: true`; wait for it to exit.
+   older than the files under review, run the snapshot tests as
+   [Development](../../README.md#development) shows, with Bash
+   `run_in_background: true`, and wait for them to exit.
 2. `Tests/SnapshotTests/RenderSnapshotTests.swift` names what each PNG shows:
    widget faces and the popover in each data state and in both colour
    schemes, the widget's problem states, and the menu bar icon styles.
@@ -60,8 +59,8 @@ truncation and density.
    expired, and overflow where it exists.
 4. Settings views and the live menu bar have no renders: review them from
    source and mark visual findings **"(from code - verify in the app)"**.
-   Never install or launch the app; `./build.sh` installs to
-   `/Applications`.
+   The renders and the source are your whole view of the app; it stays
+   uninstalled and unlaunched.
 
 Done when every view in scope has been seen as a render or marked as
 reviewed from code.
@@ -130,13 +129,13 @@ Copy rewrites use `current → suggested`:
 - Every finding names **what to change**, **where** (`file:line`) and **why**
   (a heuristic, an accessibility rule or a project rule). No "improve the
   design".
-- Don't pad. A short honest review beats a long one.
-- Don't redesign from scratch.
-- Don't invent user behaviour. If a recommendation depends on how often
-  something is used, put it under _Needs real usage to decide_.
-- Edit project files only if the prompt explicitly asks you to implement; the
-  Git workflow in `AGENTS.md` then applies. Otherwise keep notes outside the
-  repository.
+- Keep it short: a short honest review beats a long one.
+- Improve what exists, one smallest change at a time.
+- Base claims about users on evidence. If a recommendation depends on how
+  often something is used, put it under _Needs real usage to decide_.
+- When the prompt asks you to implement, the
+  [Git workflow](../../AGENTS.md#git-workflow) applies. Otherwise keep notes
+  outside the repository.
 
 ---
 
@@ -169,22 +168,23 @@ For each lens, check the items and report violations as P1, P2 or P3.
 
 ## Lens 2 - Accessibility
 
-- **VoiceOver**: every gauge, icon and control has an accessibility label
-  and value (`accessibilityLabel`, `accessibilityValue`); decorative images
-  are hidden; related elements are combined
-  (`accessibilityElement(children: .combine)`) so a limit reads as one item.
-- **Not colour alone**: the level also shows as text, a symbol or a shape.
-- **Contrast**: text at least 4.5:1 (3:1 for large text), gauges and
-  symbols at least 3:1, in both colour schemes and on the widget's tinted
-  background. Measure from the render; don't guess.
+Check every rule in
+[Interface and accessibility](../../CODING_STANDARDS.md#interface-and-accessibility),
+then these:
+
+- **VoiceOver mechanics**: decorative images hidden; related elements
+  combined (`accessibilityElement(children: .combine)`) so a limit reads as
+  one item.
+- **Contrast thresholds**: text at least 4.5:1 (3:1 for large text), gauges
+  and symbols at least 3:1, also on the widget's tinted background. Measure
+  from the render.
 - **Text size**: fixed point sizes that cannot grow; truncation that hides
   the number or the reset time.
 - **Keyboard**: the popover and Settings are operable by keyboard; focus
   order is logical.
 - **Reduce motion and transparency**: animations respect
   `accessibilityReduceMotion`; text stays legible with Reduce Transparency.
-- **Menu bar icon**: legible at menu bar size in light and dark menu bars,
-  and as a template image where the user chose that.
+- **Menu bar icon**: legible at menu bar size in light and dark menu bars.
 
 ## Lens 3 - Visual hierarchy and glanceability
 

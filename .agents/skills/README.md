@@ -22,25 +22,21 @@ in livingit-intelligence, including supporting files. License: MIT, full
 notice in [LICENSE-mattpocock](LICENSE-mattpocock).
 
 - Building and reviewing: `tdd`, `code-review`, and `codebase-design`,
-  which `tdd` calls. Their examples are in Swift. `code-review` adds a third
-  axis, Bugs, whose findings a fresh verifier sub-agent confirms or drops,
-  and tags every finding Important, Nit or Pre-existing. With no issue, it
-  takes the spec from the pull request or the developer's request.
+  which `tdd` calls. Their examples are rewritten in Swift, and
+  `code-review` takes its spec from the pull request or the developer's
+  request when no issue exists.
 - Design questions: `grilling`, and `domain-modeling` for
   [`GLOSSARY.md`](../../GLOSSARY.md) and [`docs/adr/`](../../docs/adr/).
-  `domain-modeling` keeps the glossary to business terms and gives every ADR
-  a status; an existing ADR changes only in its status, a status note or a
-  repointed link.
 - Maintaining skills and agent instructions: `writing-for-agents`.
 
 Upstream revisions last compared, through livingit-intelligence:
 `b0618bc436ad893b3c5e84e55fba86586d34a404`, and
 `d81f3a183412e71a5b1e84ca21bc1a35eea03a60` for `domain-modeling`.
 
-## Written for livingit-intelligence
+## Written here
 
-- `pr-description`: the pull request body template, adapted to a Mac app
-  without preview deployments.
+- `pr-description`: the pull request body template, adapted from
+  livingit-intelligence's.
 
 A personal mattpocock-skills plugin shows its own copies with a
 `mattpocock-skills:` prefix; this repo's skills are the unprefixed ones.

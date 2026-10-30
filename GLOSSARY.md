@@ -13,8 +13,8 @@ Each profile has its own limits and its own token.
 _Avoid_: account (when the folder is meant), config, user
 
 **Token expired**:
-The state of a profile whose access token has passed its expiry and that
-waits for Claude Code to refresh it. The app never refreshes it.
+The state of a profile whose access token has passed its expiry, until
+Claude Code refreshes it.
 _Avoid_: logged out, signed out
 
 ### Limits

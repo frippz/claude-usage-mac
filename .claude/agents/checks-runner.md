@@ -16,7 +16,8 @@ Run the caller's commands from the worktree it names, in the order given;
 which commands a change needs is in
 [Verification and handoff](../../AGENTS.md#verification-and-handoff).
 
-Run each command as given, with only the redirect added. Send each command's
+Create the log folder with `mkdir -p test-results` first. Then run each
+command as given, with only the redirect added. Send each command's
 output to `test-results/<command>.log` (gitignored), with each run of
 non-alphanumeric characters in the command as `-`, cut to its first 60
 characters: `swift test > test-results/swift-test.log 2>&1`. Run an

@@ -9,7 +9,6 @@ principle.
 
 ## Writing
 
-Write documentation, code, comments, commits and pull requests in English.
 Preserve the facts of the source when rewriting or summarising text.
 
 Comments explain why: the constraint, the failure that taught it, the

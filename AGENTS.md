@@ -22,7 +22,8 @@ Read only the documentation your task needs:
 
 - Writing or reviewing code or documentation: read
   [CODING_STANDARDS.md](CODING_STANDARDS.md) first.
-- What the app does, reads and sends: [README.md](README.md).
+- What the app does, reads and sends, and the build and test commands:
+  [README.md](README.md).
 - Terms and decisions: [GLOSSARY.md](GLOSSARY.md) and
   [`docs/adr/`](docs/adr/). Use the glossary's terms, and surface a conflict
   with an accepted ADR rather than override it. The
@@ -35,37 +36,28 @@ This is a personal fork kept deliberately small: the five-hour and weekly
 limits, read-only credentials, no updater. Do not reintroduce removed
 features (cost and token tracking, history, budgets, the statusline
 installer, auto-switch, styled widget faces, self-update) unless the
-developer asks for that feature by name. Do not present planned work as
-implemented.
+developer asks for that feature by name.
 
 ## Verification and handoff
 
-Run the checks the change needs, from the change's worktree. The
+Run the checks the change needs, from the change's worktree, with the
+commands in [Development](README.md#development). The
 [`checks-runner`](.claude/agents/checks-runner.md) agent runs them and
 returns only the failures, which keeps `xcodebuild` output out of your
 context.
 
 - Every change to `Sources/` or `Tests/`: `swift build` and `swift test`.
 - A change to the app, the widget, `project.yml` or `SharedViews`: also
-  generate the project and build both targets without signing:
-
-  ```sh
-  xcodegen generate
-  xcodebuild build -project ClaudeUsage.xcodeproj -scheme ClaudeUsage \
-    -configuration Release -derivedDataPath .build-xcode CODE_SIGNING_ALLOWED=NO
-  ```
-
+  generate the project and build both targets without signing.
 - A change to what a view shows, bug fixes included: the **rendered check**.
-  Run the snapshot tests
-  (`xcodebuild test -project ClaudeUsage.xcodeproj -scheme SnapshotTests`),
-  then look at every PNG in `snapshots/` the change affects, in both colour
-  schemes, and compare it with `main`'s render. A new view state gets a
-  render in `Tests/SnapshotTests/RenderSnapshotTests.swift`.
+  Run the snapshot tests, then look at every PNG in `snapshots/` the change
+  affects, in both colour schemes, and compare it with `main`'s render. A
+  new view state gets a render in
+  `Tests/SnapshotTests/RenderSnapshotTests.swift`.
 
-`./build.sh` installs to `/Applications` and launches the app; run it only
-when the developer asks. `./build.sh --no-install` builds and signs without
-installing. Keep tests focused on meaningful behaviour; do not add tests
-solely to mirror implementation.
+Run `./build.sh`, which installs to `/Applications` and launches the app,
+only when the developer asks; `./build.sh --no-install` stays in the
+worktree.
 
 For documentation-only changes, check consistency, links and that changed
 text preserves the facts of its source; no build is required.
@@ -103,14 +95,8 @@ Merging a pull request needs the developer's authorization.
 
 Skills are versioned in `.agents/skills/`; the
 [skills README](.agents/skills/README.md) lists them and how they load.
-Claude Code subagents are versioned in `.claude/agents/` and run only in
-Claude Code:
-
-- [`checks-runner`](.claude/agents/checks-runner.md): runs the checks above
-  or reads a failed CI run, and returns only the failures.
-- [`ux-reviewer`](.claude/agents/ux-reviewer.md): reviews the menu bar
-  popover, the widget faces or Settings from the snapshot renders and the
-  SwiftUI source.
+Claude Code subagents, `checks-runner` and `ux-reviewer`, are versioned in
+`.claude/agents/` and run only in Claude Code.
 
 Explicit developer instructions override these defaults. Reuse decisions and
 approvals already given; ask only for unresolved choices the task requires.

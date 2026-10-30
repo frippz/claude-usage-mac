@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # Claude Code PreToolUse hook for Bash: blocks Git commands that skip the
-# repository's Git hooks (--no-verify, -n on git commit, or a -c override
-# of core.hooksPath), so AGENTS.md#git-workflow stays enforced. Configured
-# in .claude/settings.json. Python because the repo has no Node, and
-# macOS ships python3 with the Xcode command line tools.
+# repository's Git hooks (--no-verify or an abbreviation of it, -n on git
+# commit, or pointing core.hooksPath elsewhere through -c, --config-env,
+# GIT_CONFIG_* or git config), so AGENTS.md#git-workflow stays enforced.
+# Configured in .claude/settings.json. Python because the repo has no Node,
+# and macOS ships python3 with the Xcode command line tools.
 import json
 import re
 import sys
@@ -46,31 +47,63 @@ COMMIT_LONG_VALUE_OPTIONS = {
 }
 
 
+def program(word):
+    """A command word with any subshell or substitution opener removed."""
+    return word.lstrip("($`{")
+
+
+def is_no_verify(arg):
+    """--no-verify, or an abbreviation of it that git still accepts."""
+    return len(arg) >= len("--no-ver") and "--no-verify".startswith(arg)
+
+
+def sets_hooks_path(option, value):
+    """A global option that overrides core.hooksPath for one command."""
+    if option == "-c" or option == "--config-env":
+        return bool(re.match(r"core\.hookspath=", value, re.I))
+    return bool(re.match(r"(-c|--config-env=)core\.hookspath=", option, re.I))
+
+
+def changes_hooks_path(args):
+    """`git config` pointing core.hooksPath anywhere but .githooks, or unsetting it."""
+    key = next((i for i, a in enumerate(args) if a.lower() == "core.hookspath"), None)
+    if key is None:
+        return False
+    if any(a in ("--unset", "--unset-all", "unset") for a in args[:key]):
+        return True
+    if any(a in ("--get", "--get-all", "get") for a in args[:key]):
+        return False
+    rest = [a for a in args[key + 1:] if not a.startswith("-")]
+    return bool(rest) and rest[0] != ".githooks"
+
+
 def skips_hooks(words):
-    program = next((i for i, w in enumerate(words) if re.search(r"(^|/)git$", w)), -1)
-    if program == -1:
+    start = next((i for i, w in enumerate(words) if re.search(r"(^|/)git$", program(w))), -1)
+    if start == -1:
         return shell_command_skips_hooks(words)
 
-    index = program + 1
+    index = start + 1
     while index < len(words) and words[index].startswith("-"):
         option = words[index]
         nxt = words[index + 1] if index + 1 < len(words) else ""
-        if option == "-c" and re.match(r"core\.hookspath=", nxt, re.I):
+        if sets_hooks_path(option, nxt):
             return True
         if option in GIT_VALUE_OPTIONS:
             index += 1
         index += 1
     subcommand = words[index] if index < len(words) else None
     args = words[index + 1:]
+    if subcommand == "config":
+        return changes_hooks_path(args)
     if subcommand != "commit":
-        return "--no-verify" in args
+        return any(map(is_no_verify, args))
 
     i = 0
     while i < len(args):
         arg = args[i]
         if arg == "--":
             return False
-        if arg == "--no-verify":
+        if is_no_verify(arg):
             return True
         if arg in COMMIT_LONG_VALUE_OPTIONS:
             i += 1
@@ -88,17 +121,25 @@ def skips_hooks(words):
 
 
 def shell_command_skips_hooks(words):
-    """Checks the script of `sh -c`, `bash -c` or `zsh -c`."""
-    if not words or not re.search(r"(^|/)(ba|z)?sh$", words[0]) or "-c" not in words:
+    """Checks the script of `sh -c`, `bash -lc`, `zsh -c` and the like."""
+    if not words or not re.search(r"(^|/)(ba|z)?sh$", program(words[0])):
         return False
-    position = words.index("-c") + 1
-    return position < len(words) and any(map(skips_hooks, simple_commands(words[position])))
+    flag = next((i for i, w in enumerate(words) if re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", w)), None)
+    if flag is None or flag + 1 >= len(words):
+        return False
+    return any(map(skips_hooks, simple_commands(words[flag + 1])))
 
 
-if any(map(skips_hooks, simple_commands(command))):
+# Environment configuration git reads for every command, set inline or exported.
+ENV_HOOKS_PATH = re.compile(
+    r"""GIT_CONFIG_(?:KEY_\d+|PARAMETERS)=['"]*\S*core\.hookspath""", re.I
+)
+
+
+if ENV_HOOKS_PATH.search(command) or any(map(skips_hooks, simple_commands(command))):
     print(
         "Blocked: this Git command skips the repository's Git hooks (--no-verify, "
-        "-n on git commit, or a core.hooksPath override), which enforce "
+        "-n on git commit, or a core.hooksPath change), which enforce "
         "AGENTS.md#git-workflow. Run it without that option.",
         file=sys.stderr,
     )

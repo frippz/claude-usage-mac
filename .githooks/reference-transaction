@@ -1,0 +1,14 @@
+#!/bin/sh
+# Refuses moving local main anywhere but origin/main's commit, which catches
+# what pre-commit cannot: commits made on main by cherry-pick, revert, reset
+# or am. Fast-forwarding main to a fetched origin/main still works. See
+# AGENTS.md#git-workflow.
+[ "$1" = prepared ] || exit 0
+while read -r old new ref; do
+  [ "$ref" = refs/heads/main ] || continue
+  if [ "$new" != "$(git rev-parse -q --verify refs/remotes/origin/main)" ]; then
+    echo "Refused: main only ever moves to origin/main. Work on an agent/ branch in its own worktree; see AGENTS.md#git-workflow." >&2
+    exit 1
+  fi
+done
+exit 0
