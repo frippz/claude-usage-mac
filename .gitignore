@@ -13,6 +13,9 @@ Sources/**/*.entitlements
 # Rendered by the snapshot tests
 snapshots/
 
+# Logs from the checks-runner agent
+test-results/
+
 .mcp.json
 graphify-out/
 .codegraph/

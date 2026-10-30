@@ -99,6 +99,14 @@ Numbers are marked outdated after three missed polls, whatever the interval.
 
 ## Development
 
+Changes reach `main` through pull requests from `agent/` branches; the
+workflow, for people and coding agents alike, is in [AGENTS.md](AGENTS.md).
+Enable the Git hooks that enforce it once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ```sh
 swift test                       # unit tests
 swift run usage-cli              # human-readable summary

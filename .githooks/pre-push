@@ -1,0 +1,23 @@
+#!/bin/sh
+# Refuses a push to main, an update of an existing remote tag and any push
+# that is not a fast-forward of the remote branch it updates, which a
+# force-push would be; see AGENTS.md#git-workflow. Creating and deleting
+# other branches is allowed.
+is_zero() { [ -z "$(echo "$1" | tr -d 0)" ]; }
+
+status=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "Refused: never push to main; open a pull request. See AGENTS.md#git-workflow." >&2
+    status=1
+  elif is_zero "$local_sha" || is_zero "$remote_sha"; then
+    : # Deleting or creating a remote ref.
+  elif [ "${remote_ref#refs/tags/}" != "$remote_ref" ]; then
+    echo "Refused: $remote_ref already exists; replacing a tag is a force-push. See AGENTS.md#git-workflow." >&2
+    status=1
+  elif ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+    echo "Refused: $remote_ref is not a fast-forward, or its remote tip is not fetched; never force-push. Fetch and merge instead. See AGENTS.md#git-workflow." >&2
+    status=1
+  fi
+done
+exit $status

@@ -1,6 +1,10 @@
+---
+status: deprecated
+---
+
 # One widget kind per face style
 
-**Superseded in this fork:** the styled faces were removed, and the fork ships a
+**Deprecated in this fork:** the styled faces were removed, and the fork ships a
 single widget kind, `se.frodlund.claude-usage.widget`. The bundle ID changed
 anyway, so no placed widget carried over.
 
