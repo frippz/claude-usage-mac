@@ -22,6 +22,14 @@ final class Poller: ObservableObject {
     @AppStorage(SettingsKey.critical) private var critical = 80.0
     @AppStorage(SettingsKey.selectedProfile) private var selectedProfile = ""
     @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = RefreshInterval.standard.rawValue
+
+    /// The stored interval held to the offered range, so a value from before
+    /// faster intervals were removed, or from `defaults write`, never polls
+    /// faster than the floor.
+    private var pollSeconds: Int {
+        min(max(refreshSeconds, RefreshInterval.fiveMinutes.rawValue),
+            RefreshInterval.tenMinutes.rawValue)
+    }
     @AppStorage(SettingsKey.notifyThreshold) private var notifyThreshold = true
 
     private var loop: Task<Void, Never>?
@@ -98,11 +106,8 @@ final class Poller: ObservableObject {
             self.snapshot = snapshot
             return
         }
-        // Raises a choice stored when faster intervals were offered, which the
-        // picker no longer lists.
-        if RefreshInterval(rawValue: refreshSeconds) == nil {
-            refreshSeconds = RefreshInterval.standard.rawValue
-        }
+        // So the picker, which lists only offered intervals, shows the one in use.
+        refreshSeconds = pollSeconds
         rediscover()
         start()
     }
@@ -158,14 +163,14 @@ final class Poller: ObservableObject {
     private func waitForNextPoll() async {
         // Discarded rather than returned: `try?` on a Void call yields `Void?`,
         // which as a closure's only expression would make this a Task<()?, Never>.
-        let task = Task { _ = try? await Task.sleep(for: .seconds(refreshSeconds)) }
+        let task = Task { _ = try? await Task.sleep(for: .seconds(pollSeconds)) }
         sleeper = task
         await task.value
         sleeper = nil
     }
 
     /// Called when the interval changes: end the current wait so the new one
-    /// starts from now. Going from ten minutes back down to one would otherwise
+    /// starts from now. Going from ten minutes back down to five would otherwise
     /// take ten minutes to take effect.
     ///
     /// Deliberately not stop() plus start(). Cancelling the loop cancels a poll
@@ -191,7 +196,7 @@ final class Poller: ObservableObject {
         var bundle = SnapshotBundle(
             profileList: profiles,
             defaultProfileID: profiles.first { $0.isDefault }?.id ?? profiles.first?.id,
-            refreshSeconds: refreshSeconds)
+            refreshSeconds: pollSeconds)
 
         for profile in profiles {
             guard let monitor = monitors[profile.id] else { continue }
@@ -200,7 +205,7 @@ final class Poller: ObservableObject {
                 label: labelled ? profile.displayName : nil,
                 // Three polls, whatever the interval — otherwise picking a
                 // five-minute refresh would label one-poll-old numbers outdated.
-                staleAfter: Double(refreshSeconds) * 3)
+                staleAfter: Double(pollSeconds) * 3)
         }
         bundle.updatedAt = Date()
 
