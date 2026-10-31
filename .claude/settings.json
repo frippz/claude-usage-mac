@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "ask": ["Bash(gh pr merge:*)"]
+    "ask": ["Bash(gh pr merge:*)", "Bash(gh pr checkout:*)"]
   },
   "hooks": {
     "PreToolUse": [
