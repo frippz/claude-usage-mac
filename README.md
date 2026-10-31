@@ -142,6 +142,10 @@ The Release workflow then creates a GitHub release with notes generated from
 the merged pull requests. It refuses a tag on a commit that is not on
 `main`.
 
+Releases from v0.2.3 on are immutable: once published, a release's tag
+can't be moved, deleted or reused, even if the release is deleted. Fix a
+wrong release by tagging the next patch version.
+
 ## License
 
 MIT, see [LICENSE](LICENSE). The original repository declares MIT in its
