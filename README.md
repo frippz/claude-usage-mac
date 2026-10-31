@@ -144,6 +144,5 @@ the merged pull requests. It refuses a tag on a commit that is not on
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The original work is by Saeed Kolivand. The
-original repository declares MIT in its README but ships no license file, so
-this one uses the standard MIT text.
+MIT, see [LICENSE](LICENSE). The original repository declares MIT in its
+README but ships no license file, so this one uses the standard MIT text.
