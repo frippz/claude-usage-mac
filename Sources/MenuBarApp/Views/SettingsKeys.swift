@@ -25,6 +25,10 @@ enum RefreshInterval: Int, CaseIterable, Identifiable {
     case fiveMinutes = 300
     case tenMinutes = 600
 
+    /// Usage moves slowly against five-hour and weekly windows, so polling
+    /// faster mostly spends requests against an undocumented endpoint.
+    static let standard = RefreshInterval.fiveMinutes
+
     var id: Int { rawValue }
 
     var label: String {

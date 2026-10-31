@@ -21,7 +21,7 @@ final class Poller: ObservableObject {
     @AppStorage(SettingsKey.warn) private var warn = 50.0
     @AppStorage(SettingsKey.critical) private var critical = 80.0
     @AppStorage(SettingsKey.selectedProfile) private var selectedProfile = ""
-    @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = 60
+    @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = RefreshInterval.standard.rawValue
     @AppStorage(SettingsKey.notifyThreshold) private var notifyThreshold = true
 
     private var loop: Task<Void, Never>?

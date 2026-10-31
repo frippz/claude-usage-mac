@@ -4,7 +4,7 @@ import SwiftUI
 struct GeneralSettings: View {
     @ObservedObject var poller: Poller
 
-    @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = 60
+    @AppStorage(SettingsKey.refreshInterval) private var refreshSeconds = RefreshInterval.standard.rawValue
     @AppStorage(SettingsKey.hotkey) private var hotkey = HotkeyChoice.off.rawValue
     /// Read once when the view is first built rather than on every redraw — an
     /// install cannot change source while the app is running.
