@@ -10,8 +10,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    # build.sh stamps both from Git: the latest vX.Y.Z tag and the commit
-    # count. These mark a build that did not come through it.
+    # scripts/version.sh stamps both from Git; these mark a build that did
+    # not come through it.
     MARKETING_VERSION: "0.0.0"
     CURRENT_PROJECT_VERSION: "1"
     # A stable team identity, not ad-hoc: the widget extension is identified by

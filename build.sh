@@ -18,11 +18,7 @@ command -v xcodegen >/dev/null || {
 DERIVED=".build-xcode"
 APP="$DERIVED/Build/Products/Release/Claude Usage.app"
 
-# The latest vX.Y.Z tag is the version. A build past it carries git describe's
-# suffix (0.2.0-3-gabc1234), and uncommitted changes add -dirty.
-VERSION=$(git describe --tags --match 'v[0-9]*' --dirty 2>/dev/null | sed 's/^v//') || true
-VERSION=${VERSION:-0.0.0-$(git rev-parse --short HEAD)}
-BUILD=$(git rev-list --count HEAD)
+VERSION_SETTINGS=$(scripts/version.sh)
 
 xcodegen generate
 xcodebuild build \
@@ -30,12 +26,11 @@ xcodebuild build \
     -scheme ClaudeUsage \
     -configuration Release \
     -derivedDataPath "$DERIVED" \
-    MARKETING_VERSION="$VERSION" \
-    CURRENT_PROJECT_VERSION="$BUILD"
+    $VERSION_SETTINGS
 
 echo
 codesign --verify --deep --strict "$APP" && echo "Signature OK: $APP"
-echo "Version $VERSION ($BUILD)"
+echo "Version: ${VERSION_SETTINGS:-from project.yml}"
 
 [[ "${1:-}" == "--no-install" ]] && exit 0
 

@@ -89,8 +89,8 @@ Authorized under this workflow:
   into its branch and pushing, never rebasing or force-pushing.
 - Removing a worktree and its local branch after its pull request merged.
 
-Merging a pull request and pushing a release tag need the developer's
-authorization.
+Merging a pull request needs the developer's authorization, and so does
+pushing a [release](README.md#releasing) tag.
 
 ## Agent skills
 

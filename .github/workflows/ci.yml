@@ -39,6 +39,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # scripts/version.sh reads the tags
 
       - name: Install build tools
         run: brew install xcodegen xcbeautify
@@ -56,6 +58,7 @@ jobs:
             -destination 'platform=macOS' \
             -derivedDataPath dd \
             CODE_SIGNING_ALLOWED=NO \
+            $(scripts/version.sh) \
             | xcbeautify --renderer github-actions
 
       - name: Render snapshots

@@ -17,7 +17,7 @@ brew install xcodegen
 ./build.sh --no-install  # build only, into .build-xcode
 ```
 
-There are no releases. Build it yourself.
+[Releases](#releasing) carry no binary. Build it yourself.
 
 Both targets are signed with an Apple Development certificate from team
 `XU3G5KB593`, which is mine. To build under your own team, change the team ID
@@ -127,10 +127,9 @@ xcodebuild test -project ClaudeUsage.xcodeproj -scheme SnapshotTests
 
 ## Releasing
 
-Versions follow [semantic versioning](https://semver.org) and come from Git
-tags: `./build.sh` stamps the latest `vX.Y.Z` tag into the app, with
-`git describe`'s suffix on builds past it (`0.2.0-3-gabc1234`). To release
-the current `main`:
+Versions follow [semantic versioning](https://semver.org) and come from
+`vX.Y.Z` Git tags, which [`scripts/version.sh`](scripts/version.sh) stamps
+into every build. To release the current `main`:
 
 ```sh
 git pull --ff-only
@@ -140,7 +139,7 @@ git push origin v0.2.0
 
 The Release workflow then creates a GitHub release with notes generated from
 the merged pull requests. It refuses a tag on a commit that is not on
-`main`. Releases carry no binary; build each one with `./build.sh`.
+`main`.
 
 ## License
 
