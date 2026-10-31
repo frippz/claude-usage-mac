@@ -15,8 +15,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The macOS jobs are required checks, so they are skipped, not left out:
+  # a skipped job passes, a workflow that never ran blocks the merge.
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Anything but Markdown counts as code. With no base to compare, such as
+      # a new branch or a manual run, everything does.
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          code=true
+          if git cat-file -e "${BASE}^{commit}" 2>/dev/null \
+              && git diff --quiet "$BASE" HEAD -- ':!*.md'; then
+            code=false
+          fi
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+
   core:
     name: UsageCore
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -41,6 +68,8 @@ jobs:
 
   app:
     name: App + Widget
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
