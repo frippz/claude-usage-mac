@@ -22,7 +22,7 @@ enum WidgetProblem {
 
     var headline: String {
         switch self {
-        case .noData:         return "Open Claude Usage"
+        case .noData:         return "Open Headroom"
         case .profileMissing: return "Profile not found"
         }
     }

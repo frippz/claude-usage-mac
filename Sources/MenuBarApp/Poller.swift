@@ -243,7 +243,7 @@ final class Poller: ObservableObject {
             Task {
                 await Notifier.shared.post(
                     title: "\(metric.title) at \(Format.percent(pct))",
-                    body: resets.isEmpty ? "Claude Usage" : "Resets in \(resets)")
+                    body: resets.isEmpty ? "Headroom" : "Resets in \(resets)")
             }
         }
     }

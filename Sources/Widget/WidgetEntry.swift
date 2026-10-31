@@ -102,7 +102,7 @@ struct UsageWidget: Widget {
                                provider: UsageProvider()) { entry in
             UsageWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Claude Usage")
+        .configurationDisplayName("Headroom")
         .description("Five-hour and weekly limits.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }

@@ -1,4 +1,4 @@
-# Claude Usage
+# Headroom
 
 How much of a Claude account's usage limits is spent, shown in the macOS
 menu bar and on the desktop.

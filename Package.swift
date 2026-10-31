@@ -5,7 +5,7 @@ import PackageDescription
 // exists so the data layer can be built and tested with plain `swift test`,
 // which is faster in CI and needs no project generation.
 let package = Package(
-    name: "ClaudeUsage",
+    name: "Headroom",
     platforms: [.macOS(.v13)],
     products: [
         .library(name: "UsageCore", targets: ["UsageCore"]),

@@ -57,8 +57,8 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild build \
-            -project ClaudeUsage.xcodeproj \
-            -scheme ClaudeUsage \
+            -project Headroom.xcodeproj \
+            -scheme Headroom \
             -configuration Release \
             -destination 'platform=macOS' \
             -derivedDataPath dd \
@@ -70,7 +70,7 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild test \
-            -project ClaudeUsage.xcodeproj \
+            -project Headroom.xcodeproj \
             -scheme SnapshotTests \
             -destination 'platform=macOS' \
             | xcbeautify --renderer github-actions
@@ -86,11 +86,11 @@ jobs:
       - name: Check the bundle
         run: |
           set -euo pipefail
-          APP="dd/Build/Products/Release/Claude Usage.app"
+          APP="dd/Build/Products/Release/Headroom.app"
 
           # Unsigned here (the team certificate lives on the dev Mac), so this
           # checks structure only; entitlements are checked locally.
-          test -d "$APP/Contents/PlugIns/ClaudeUsageWidget.appex" \
+          test -d "$APP/Contents/PlugIns/HeadroomWidget.appex" \
             || { echo "widget did not embed"; ls -R "$APP/Contents"; exit 1; }
 
           # A missing icon should fail the build, not ship as a blank square in
