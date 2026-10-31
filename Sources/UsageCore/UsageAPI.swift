@@ -58,10 +58,11 @@ public struct FetchResult: Sendable {
 /// fetched most recently to whoever asked next.
 public actor UsageAPI {
     public static let endpoint = URL(string: "https://api.anthropic.com/api/oauth/usage")!
-    /// Says who is calling. `claude-usage-mac/<version>` (the old name) was
-    /// tested 2026-10-29 and `headroom/<version>` 2026-10-31: the endpoint
-    /// answered both the same as a claude-code User-Agent, with no 429s over
-    /// ten minutes of 60-second polls, so there is no need to pose as one.
+    /// Says who is calling. Tested 2026-10-29 under the app's old name,
+    /// `claude-usage-mac/<version>`: the endpoint answered it the same as a
+    /// claude-code User-Agent, so there is no need to pose as one. Retested
+    /// 2026-10-31 as `headroom/<version>`: ten polls 60 seconds apart all got
+    /// 200 with both limits, and no 429s.
     public static var userAgent: String { "headroom/\(AppVersion.current)" }
 
     private static let cacheTTL: TimeInterval = 55
