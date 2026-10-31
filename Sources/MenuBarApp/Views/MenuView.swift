@@ -12,6 +12,7 @@ struct MenuView: View {
     /// bundle it's hosted in, so the snapshots would otherwise show prohibition
     /// badges and the test runner's version number.
     var showsActions = true
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -119,8 +120,13 @@ struct MenuView: View {
                     Button("Refresh", action: refresh)
                         .disabled(isRefreshing)
                         .keyboardShortcut("r")
-                    SettingsLink { Text("Settings…") }
-                        .keyboardShortcut(",")
+                    // Not SettingsLink: an LSUIElement app is never active on its
+                    // own, so the window opened behind whatever app was in front.
+                    Button("Settings…") {
+                        openSettings()
+                        NSApp.activate()
+                    }
+                    .keyboardShortcut(",")
                     Spacer()
                     Button("Quit") { NSApplication.shared.terminate(nil) }
                         .keyboardShortcut("q")
