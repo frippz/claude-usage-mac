@@ -5,8 +5,8 @@ desktop widget.
 
 Originally based on
 [saeedkolivand/claude-usage-mac](https://github.com/saeedkolivand/claude-usage-mac)
-by Saeed Kolivand, since cut down to the limits alone. It has no updater, never writes Claude Code's
-credentials, and does not read your transcripts.
+by Saeed Kolivand, since cut down to the limits alone. It has no updater,
+never writes Claude Code's credentials, and does not read your transcripts.
 
 ## Build and install
 
@@ -144,6 +144,6 @@ the merged pull requests. It refuses a tag on a commit that is not on
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The original work is by Saeed Kolivand. The original
-repository declares MIT in its README but ships no license file, so this one uses the
-standard MIT text.
+MIT, see [LICENSE](LICENSE). The original work is by Saeed Kolivand. The
+original repository declares MIT in its README but ships no license file, so
+this one uses the standard MIT text.
