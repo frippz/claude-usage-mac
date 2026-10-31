@@ -10,8 +10,9 @@ struct RingGauge: View {
     /// Overrides the threshold tint: the menu bar's mono and custom colour
     /// modes, and grey for outdated numbers. Nil keeps `level.tint`.
     var tint: Color?
+    @Environment(\.colorScheme) private var scheme
 
-    private var color: Color { tint ?? level.tint }
+    private var color: Color { tint ?? level.tint(scheme) }
 
     private var fraction: CGFloat {
         guard let pct else { return 0 }
@@ -62,13 +63,14 @@ struct MetricGauge: View {
     let snapshot: Snapshot
     let metric: Metric
     var lineWidth: CGFloat = 8
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         VStack(spacing: 6) {
             RingGauge(pct: snapshot.pct(metric),
                       level: snapshot.level(metric),
                       lineWidth: lineWidth,
-                      tint: snapshot.stale ? Level.none.tint : nil)
+                      tint: snapshot.tint(metric, scheme))
             VStack(spacing: 1) {
                 MetricLabel(snapshot: snapshot, metric: metric)
                 Text(snapshot.resetsText(metric))
@@ -77,9 +79,16 @@ struct MetricGauge: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(metric.title)
-        .accessibilityValue(snapshot.spokenValue(metric))
+        .limitAccessibility(snapshot, metric)
+    }
+}
+
+extension View {
+    /// Reads a limit as one VoiceOver item: its name, then number, level and reset.
+    func limitAccessibility(_ snapshot: Snapshot, _ metric: Metric) -> some View {
+        accessibilityElement(children: .ignore)
+            .accessibilityLabel(metric.title)
+            .accessibilityValue(snapshot.spokenValue(metric))
     }
 }
 
@@ -88,6 +97,7 @@ struct MetricLabel: View {
     let snapshot: Snapshot
     let metric: Metric
     var size: CGFloat = 9
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         HStack(spacing: 3) {
@@ -98,7 +108,7 @@ struct MetricLabel: View {
             if let symbol = snapshot.level(metric).symbol {
                 Image(systemName: symbol)
                     .font(.system(size: size - 1))
-                    .foregroundStyle(snapshot.stale ? Level.none.tint : snapshot.level(metric).tint)
+                    .foregroundStyle(snapshot.tint(metric, scheme))
             }
         }
     }
@@ -131,14 +141,14 @@ struct MiniBar: View {
 struct LimitRow: View {
     let snapshot: Snapshot
     let metric: Metric
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         HStack(spacing: 8) {
             MetricLabel(snapshot: snapshot, metric: metric)
                 .frame(width: 60, alignment: .leading)
             MiniBar(fraction: (snapshot.pct(metric) ?? 0) / 100,
-                    tint: snapshot.stale ? Level.none.tint : snapshot.level(metric).tint,
-                    height: 4)
+                    tint: snapshot.tint(metric, scheme), height: 4)
             Text(Format.percent(snapshot.pct(metric)))
                 .font(.system(size: 10, weight: .medium))
                 .monospacedDigit()
@@ -149,9 +159,7 @@ struct LimitRow: View {
                 .frame(width: 70, alignment: .trailing)
         }
         .lineLimit(1)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(metric.title)
-        .accessibilityValue(snapshot.spokenValue(metric))
+        .limitAccessibility(snapshot, metric)
     }
 }
 

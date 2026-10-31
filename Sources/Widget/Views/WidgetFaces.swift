@@ -44,6 +44,7 @@ struct UsageWidgetView: View {
     var scopeLabel: String?
     var problem: WidgetProblem?
     let face: Face
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Group {
@@ -87,7 +88,7 @@ struct UsageWidgetView: View {
             RingGauge(pct: snapshot.pct(.session),
                       level: snapshot.level(.session),
                       lineWidth: 11,
-                      tint: snapshot.stale ? Level.none.tint : nil)
+                      tint: snapshot.tint(.session, scheme))
             VStack(spacing: 2) {
                 MetricLabel(snapshot: snapshot, metric: .session, size: 10)
                 Text(snapshot.resetsText(.session))
@@ -161,17 +162,15 @@ struct UsageWidgetView: View {
                 ForEach(limits, id: \.self) { metric in
                     if face == .medium {
                         HStack(spacing: 6) {
-                            Text(metric.label)
-                                .font(.system(size: 9, weight: .semibold))
-                                .tracking(0.6)
-                                .foregroundStyle(.secondary)
+                            MetricLabel(snapshot: snapshot, metric: metric)
                             Spacer(minLength: 4)
                             Text(Format.percent(snapshot.pct(metric)))
                                 .font(.system(size: 11, weight: .medium))
                                 .monospacedDigit()
-                                .foregroundStyle(snapshot.level(metric).tint)
+                                .foregroundStyle(snapshot.tint(metric, scheme))
                         }
                         .lineLimit(1)
+                        .limitAccessibility(snapshot, metric)
                     } else {
                         LimitRow(snapshot: snapshot, metric: metric)
                     }

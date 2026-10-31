@@ -35,13 +35,15 @@ final class SnapshotDisplayTests: XCTestCase {
         let never = Snapshot(updatedAt: now, usage: nil, error: "no-token")
         XCTAssertFalse(never.hasNumbers)
         XCTAssertEqual(MenuView.status(never, now: now), "Not updated yet")
-        XCTAssertEqual(MenuView.status(snapshot(sessionResetsIn: 60), now: Date()),
-                       "Updated just now")
+        var fetched = snapshot(sessionResetsIn: 60)
+        fetched.updatedAt = now
+        XCTAssertEqual(MenuView.status(fetched, now: now), "Updated just now")
     }
 
     func testErrorsNameTheNextStepWithoutCodes() {
         XCTAssertEqual(Snapshot(error: "http-401").errorMessage,
                        "Token rejected — open Claude Code in this profile")
-        XCTAssertEqual(Snapshot(error: "http-503").errorMessage, "Couldn't update — will retry")
+        XCTAssertEqual(Snapshot(error: "http-503").errorMessage, "Claude is unavailable — will retry")
+        XCTAssertEqual(Snapshot(error: "http-403").errorMessage, "Couldn't update (error 403)")
     }
 }

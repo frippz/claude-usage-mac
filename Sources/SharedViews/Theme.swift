@@ -1,15 +1,27 @@
 import SwiftUI
 
-// Same palette as the Stream Deck plugin, so the two products read identically.
-// Ok and warn darken in light mode, where the dark-mode shades fall below the
-// 3:1 a gauge needs against white.
+// The Stream Deck plugin's palette, which views on a light background darken
+// through `tint(_:)`.
 extension Level {
     var tint: Color {
         switch self {
         case .none:     return Color(red: 0.42, green: 0.45, blue: 0.50)  // #6b7280
-        case .ok:       return .scheme(light: 0x16a34a, dark: 0x22c55e)
-        case .warn:     return .scheme(light: 0xd97706, dark: 0xf59e0b)
+        case .ok:       return Color(red: 0.13, green: 0.77, blue: 0.37)  // #22c55e
+        case .warn:     return Color(red: 0.96, green: 0.62, blue: 0.04)  // #f59e0b
         case .critical: return Color(red: 0.94, green: 0.27, blue: 0.27)  // #ef4444
+        }
+    }
+
+    /// Ok and warn fall below the 3:1 a gauge needs against white, so light
+    /// mode gets darker shades. Chosen from the view's colour scheme rather
+    /// than a dynamic NSColor, which widgets and drawn images don't reliably
+    /// resolve.
+    func tint(_ scheme: ColorScheme) -> Color {
+        guard scheme == .light else { return tint }
+        switch self {
+        case .ok:   return Color(red: 0.09, green: 0.64, blue: 0.29)  // #16a34a
+        case .warn: return Color(red: 0.85, green: 0.47, blue: 0.02)  // #d97706
+        case .none, .critical: return tint
         }
     }
 
@@ -29,19 +41,6 @@ extension Level {
         case .warn:      return "warn level"
         case .critical:  return "critical level"
         }
-    }
-}
-
-private extension Color {
-    static func scheme(light: Int, dark: Int) -> Color {
-        func rgb(_ hex: Int) -> NSColor {
-            NSColor(srgbRed: CGFloat(hex >> 16 & 0xff) / 255,
-                    green: CGFloat(hex >> 8 & 0xff) / 255,
-                    blue: CGFloat(hex & 0xff) / 255, alpha: 1)
-        }
-        return Color(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? rgb(dark) : rgb(light)
-        })
     }
 }
 
@@ -129,7 +128,7 @@ extension Snapshot {
     /// "resets 2h 14m", "just reset" once the window has ended, "—" unknown.
     func resetsText(_ metric: Metric, now: Date = Date()) -> String {
         guard let date = resetsAt(metric) else { return "—" }
-        return date <= now ? "just reset" : "resets \(Format.until(date, now: now))"
+        return hasReset(metric, now: now) ? "just reset" : "resets \(Format.until(date, now: now))"
     }
 
     /// A limit's VoiceOver value: "42 percent, warn level, resets in 2 hours,
@@ -138,7 +137,7 @@ extension Snapshot {
         var parts = [pct(metric, now: now).map { "\(Int($0.rounded())) percent" } ?? "no number"]
         if let spoken = level(metric, now: now).spoken { parts.append(spoken) }
         if let date = resetsAt(metric) {
-            parts.append(date <= now
+            parts.append(hasReset(metric, now: now)
                 ? "just reset"
                 : "resets in \(Self.spokenDuration.string(from: now, to: date) ?? "")")
         }
@@ -168,6 +167,12 @@ extension Snapshot {
         Level.of(pct(metric, now: now), warn: warn, critical: critical)
     }
 
+    /// A limit's colour: its level's, or grey while the numbers are outdated
+    /// so they never pass for live ones.
+    func tint(_ metric: Metric, _ scheme: ColorScheme) -> Color {
+        stale ? Level.none.tint : level(metric).tint(scheme)
+    }
+
     /// Human-readable form of the error codes UsageCore reports.
     var errorMessage: String? {
         switch error {
@@ -180,7 +185,11 @@ extension Snapshot {
         case "http-429":        return "Claude is limiting requests — will retry"
         case "network":         return "No connection — check your network"
         case "bad-json":        return "Couldn't read Claude's reply — will retry"
-        case _?:                return "Couldn't update — will retry"
+        case let code? where code.hasPrefix("http-5"):
+                                return "Claude is unavailable — will retry"
+        // A status that retrying won't clear; the number is what to report.
+        case let code?:
+            return "Couldn't update (error \(code.replacingOccurrences(of: "http-", with: "")))"
         }
     }
 }
