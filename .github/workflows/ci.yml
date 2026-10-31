@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Read-only whatever the repository default, since pull requests from forks
+# run here.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
