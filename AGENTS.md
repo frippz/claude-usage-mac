@@ -72,7 +72,7 @@ changed, the checks performed and any remaining limitations.
 
 Every change goes on its own `agent/<slug>` branch in its own worktree, a
 sibling of the main checkout: `git worktree add -b agent/<slug>
-../claude-usage-mac-<slug> origin/main`, then `git branch --unset-upstream`.
+../headroom-<slug> origin/main`, then `git branch --unset-upstream`.
 Commit and push only to that branch, as fast-forwards; changes reach `main`
 through a pull request. The repository's Git hooks enforce this once enabled
 with `git config core.hooksPath .githooks` (once per clone), and Claude Code
