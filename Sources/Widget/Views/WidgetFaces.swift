@@ -44,6 +44,7 @@ struct UsageWidgetView: View {
     var scopeLabel: String?
     var problem: WidgetProblem?
     let face: Face
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Group {
@@ -84,15 +85,13 @@ struct UsageWidgetView: View {
 
     private func small(_ snapshot: Snapshot) -> some View {
         VStack(spacing: 8) {
-            RingGauge(pct: snapshot.sessionPct,
+            RingGauge(pct: snapshot.pct(.session),
                       level: snapshot.level(.session),
-                      lineWidth: 11)
+                      lineWidth: 11,
+                      tint: snapshot.tint(.session, scheme))
             VStack(spacing: 2) {
-                Text(Metric.session.label)
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(0.8)
-                    .foregroundStyle(.secondary)
-                Text(resets(snapshot, .session))
+                MetricLabel(snapshot: snapshot, metric: .session, size: 10)
+                Text(snapshot.resetsText(.session))
                     .font(.system(size: 11))
                     .monospacedDigit()
                     .foregroundStyle(.tertiary)
@@ -163,28 +162,21 @@ struct UsageWidgetView: View {
                 ForEach(limits, id: \.self) { metric in
                     if face == .medium {
                         HStack(spacing: 6) {
-                            Text(metric.label)
-                                .font(.system(size: 9, weight: .semibold))
-                                .tracking(0.6)
-                                .foregroundStyle(.secondary)
+                            MetricLabel(snapshot: snapshot, metric: metric)
                             Spacer(minLength: 4)
                             Text(Format.percent(snapshot.pct(metric)))
                                 .font(.system(size: 11, weight: .medium))
                                 .monospacedDigit()
-                                .foregroundStyle(snapshot.level(metric).tint)
+                                .foregroundStyle(snapshot.tint(metric, scheme))
                         }
                         .lineLimit(1)
+                        .limitAccessibility(snapshot, metric)
                     } else {
                         LimitRow(snapshot: snapshot, metric: metric)
                     }
                 }
             }
         }
-    }
-
-    private func resets(_ snapshot: Snapshot, _ metric: Metric) -> String {
-        let text = Format.until(snapshot.resetsAt(metric))
-        return text.isEmpty ? "—" : "resets \(text)"
     }
 
     /// The widget can't fix a failed refresh itself — the host app owns that — so
