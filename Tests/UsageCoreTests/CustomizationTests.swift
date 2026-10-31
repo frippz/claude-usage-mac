@@ -66,7 +66,7 @@ final class AdditiveDecodeTests: XCTestCase {
     }
 
     /// Exactly what 0.4.0 wrote — no per-model windows, no burn rate, and the
-    /// transcript `stats` this fork no longer reads, which must be ignored.
+    /// transcript `stats` this app no longer reads, which must be ignored.
     private let legacySnapshot = """
     {"updatedAt":"2026-08-10T12:00:00Z","sessionPct":42,"weeklyPct":18,
      "stats":{"todayTokens":10,"todayCost":1,"weekTokens":20,"weekCost":2,

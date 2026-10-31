@@ -32,7 +32,7 @@ Read only the documentation your task needs:
 
 ## Scope
 
-This is a personal fork kept deliberately small: the five-hour and weekly
+This is a personal app kept deliberately small: the five-hour and weekly
 limits, read-only credentials, no updater. Do not reintroduce removed
 features (cost and token tracking, history, budgets, the statusline
 installer, auto-switch, styled widget faces, self-update) unless the
