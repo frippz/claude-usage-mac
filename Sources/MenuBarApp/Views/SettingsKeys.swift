@@ -16,14 +16,18 @@ enum SettingsKey {
 
 /// How often the app polls. Seconds, because that is what the sleep takes.
 ///
-/// A minute is the default and the floor: the usage endpoint is cached for 55
-/// seconds anyway, so a tighter interval would only redraw the same numbers.
+/// A minute is the floor: the usage endpoint is cached for 55 seconds anyway,
+/// so a tighter interval would only redraw the same numbers.
 enum RefreshInterval: Int, CaseIterable, Identifiable {
     case minute = 60
     case twoMinutes = 120
     case threeMinutes = 180
     case fiveMinutes = 300
     case tenMinutes = 600
+
+    /// Usage moves slowly against five-hour and weekly windows, so polling
+    /// faster mostly spends requests against an undocumented endpoint.
+    static let standard = RefreshInterval.fiveMinutes
 
     var id: Int { rawValue }
 

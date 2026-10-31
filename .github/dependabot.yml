@@ -1,0 +1,12 @@
+# Keeps the workflows' SHA-pinned actions current; the repository requires
+# full commit SHAs, so a version tag would be refused. One grouped pull
+# request a month.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
