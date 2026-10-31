@@ -18,15 +18,19 @@ command -v xcodegen >/dev/null || {
 DERIVED=".build-xcode"
 APP="$DERIVED/Build/Products/Release/Claude Usage.app"
 
+VERSION_SETTINGS=$(scripts/version.sh)
+
 xcodegen generate
 xcodebuild build \
     -project ClaudeUsage.xcodeproj \
     -scheme ClaudeUsage \
     -configuration Release \
-    -derivedDataPath "$DERIVED"
+    -derivedDataPath "$DERIVED" \
+    $VERSION_SETTINGS
 
 echo
 codesign --verify --deep --strict "$APP" && echo "Signature OK: $APP"
+echo "Version: ${VERSION_SETTINGS:-from project.yml}"
 
 [[ "${1:-}" == "--no-install" ]] && exit 0
 

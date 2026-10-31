@@ -10,7 +10,9 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    MARKETING_VERSION: "0.1.0"
+    # scripts/version.sh stamps both from Git; these mark a build that did
+    # not come through it.
+    MARKETING_VERSION: "0.0.0"
     CURRENT_PROJECT_VERSION: "1"
     # A stable team identity, not ad-hoc: the widget extension is identified by
     # its signature, so ad-hoc signing made every rebuild a new extension to
