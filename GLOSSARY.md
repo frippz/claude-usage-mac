@@ -61,9 +61,3 @@ _Avoid_: severity, status
 Numbers older than three polls, because refreshing them failed; shown
 with a warning instead of being hidden.
 _Avoid_: old, expired (that is the token)
-
-### Widget
-
-**Face**:
-The layout the widget shows at one of its sizes: small, medium or large.
-_Avoid_: size, family (in view code)
