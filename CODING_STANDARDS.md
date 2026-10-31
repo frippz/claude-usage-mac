@@ -70,6 +70,9 @@ Besides code that does the wrong thing, review looks first for these:
   system's reload budget; see `SnapshotBundle.draws(differentlyFrom:)`.
 - Work that can block, such as the Keychain read waiting on a consent
   dialog, runs on the main thread.
+- A workflow runs on `pull_request_target` or `workflow_run`, gets write
+  permissions on a pull request trigger, or uses an action not pinned to a
+  full commit SHA. A pull request from a fork runs code anyone can write.
 - A test is removed or skipped, or an assertion is changed to match new
   behaviour, when neither the request asks for it nor the pull request gives
   a reason.
