@@ -98,6 +98,11 @@ final class Poller: ObservableObject {
             self.snapshot = snapshot
             return
         }
+        // Raises a choice stored when faster intervals were offered, which the
+        // picker no longer lists.
+        if RefreshInterval(rawValue: refreshSeconds) == nil {
+            refreshSeconds = RefreshInterval.standard.rawValue
+        }
         rediscover()
         start()
     }
