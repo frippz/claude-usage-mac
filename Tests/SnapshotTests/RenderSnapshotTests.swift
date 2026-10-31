@@ -54,7 +54,7 @@ final class RenderSnapshotTests: XCTestCase {
             ("no-token", Snapshot(usage: nil, error: "no-token")),
             // A profile Claude Code no longer runs in: the cached payload is
             // still on screen, and its five-hour window has already elapsed, so
-            // the ring reads "resets 0m" under the banner.
+            // the ring reads "--" and "just reset" under the banner.
             ("token-expired", Snapshot(usage: .init(
                 fiveHour: UsageNode(utilization: 2,
                                     resetsAt: Date().addingTimeInterval(-3600)),
@@ -159,6 +159,12 @@ final class RenderSnapshotTests: XCTestCase {
 
                 try render(view, to: "menu-\(state.name)-\(scheme.name).png")
             }
+        }
+        for scheme in [ColorScheme.light, .dark] {
+            let view = MenuView(snapshot: nil, isRefreshing: false, hasProfiles: false)
+                .background(scheme == .dark ? Color.black : Color.white)
+                .environment(\.colorScheme, scheme)
+            try render(view, to: "menu-no-profile-\(scheme.name).png")
         }
     }
 

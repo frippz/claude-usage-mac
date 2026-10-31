@@ -57,11 +57,11 @@ final class Poller: ObservableObject {
         case .percentage:
             return marked(snapshot, metric)
         case .percentageAndReset:
-            let resets = Format.until(snapshot.resetsAt(metric))
+            let resets = snapshot.hasReset(metric) ? "" : Format.until(snapshot.resetsAt(metric))
             return resets.isEmpty ? marked(snapshot, metric) : "\(marked(snapshot, metric)) · \(resets)"
         case .bothLimits:
-            return "\(Metric.session.initial) \(Format.percent(snapshot.sessionPct))"
-                + "  \(Metric.weekly.initial) \(Format.percent(snapshot.weeklyPct))"
+            return "\(Metric.session.initial) \(Format.percent(snapshot.pct(.session)))"
+                + "  \(Metric.weekly.initial) \(Format.percent(snapshot.pct(.weekly)))"
         }
     }
 

@@ -3,6 +3,9 @@ import SwiftUI
 struct MenuView: View {
     let snapshot: Snapshot?
     let isRefreshing: Bool
+    /// False when discovery found no Claude Code profile, so no poll will ever
+    /// produce a snapshot.
+    var hasProfiles = true
     var refresh: () -> Void = {}
     /// False renders the informational content only. ImageRenderer draws
     /// interactive controls as unavailable and reads the version from whatever
@@ -24,17 +27,22 @@ struct MenuView: View {
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 10)
                 }
+                // Above the numbers, so the eye and VoiceOver reach the
+                // problem before the percentages it qualifies.
+                if let message = snapshot.errorMessage {
+                    banner(message, stale: snapshot.stale)
+                    Divider().padding(.vertical, 10)
+                }
                 gauges(snapshot)
                 burn(snapshot)
                 perModel(snapshot)
-                if let message = snapshot.errorMessage {
-                    Divider().padding(.vertical, 10)
-                    banner(message, stale: snapshot.stale)
-                }
                 Divider().padding(.vertical, 10)
                 footer(snapshot)
-            } else {
+            } else if hasProfiles {
                 loading
+            } else {
+                banner("No Claude Code profile found — run Claude Code once to sign in",
+                       stale: false)
             }
         }
         .padding(14)
@@ -57,7 +65,8 @@ struct MenuView: View {
         if let summary = snapshot.burnSummary() {
             HStack(spacing: 4) {
                 Image(systemName: "flame")
-                Text(summary)
+                    .accessibilityHidden(true)
+                Text("5-hour burn rate \(summary)")
             }
             .font(.system(size: 10))
             .foregroundStyle(.secondary)
@@ -81,33 +90,40 @@ struct MenuView: View {
     }
 
     private func banner(_ message: String, stale: Bool) -> some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Level.warn.tint)
-            Text(stale ? "\(message) — showing older numbers" : message)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel("Warning")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(message)
+                if stale { Text("Numbers are outdated") }
+            }
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .font(.system(size: 10))
+        .accessibilityElement(children: .combine)
     }
 
     // ponytail: text buttons, not an icon row — it's what menu bar apps
     // conventionally do, and it reads without a tooltip.
     private func footer(_ snapshot: Snapshot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(showsActions
-                 ? "\(Self.updated(snapshot.updatedAt)) · v\(AppVersion.current)"
-                 : Self.updated(snapshot.updatedAt))
+            let status = isRefreshing ? "Refreshing…" : Self.status(snapshot)
+            Text(showsActions ? "\(status) · v\(AppVersion.current)" : status)
                 .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
 
             if showsActions {
                 HStack(spacing: 14) {
                     Button("Refresh", action: refresh)
                         .disabled(isRefreshing)
+                        .keyboardShortcut("r")
                     SettingsLink { Text("Settings…") }
+                        .keyboardShortcut(",")
                     Spacer()
                     Button("Quit") { NSApplication.shared.terminate(nil) }
+                        .keyboardShortcut("q")
                 }
                 .buttonStyle(.link)
                 .font(.system(size: 11))
@@ -123,6 +139,10 @@ struct MenuView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    static func status(_ snapshot: Snapshot, now: Date = Date()) -> String {
+        snapshot.hasNumbers ? updated(snapshot.updatedAt, now: now) : "Not updated yet"
     }
 
     /// RelativeDateTimeFormatter renders a zero interval as "in 0 sec.", which

@@ -7,8 +7,8 @@ struct RingGauge: View {
     let level: Level
     var lineWidth: CGFloat = 8
     var showsPercent = true
-    /// Overrides the threshold tint — the menu bar's mono and custom colour
-    /// modes. Nil, the only value anything else passes, keeps `level.tint`.
+    /// Overrides the threshold tint: the menu bar's mono and custom colour
+    /// modes, and grey for outdated numbers. Nil keeps `level.tint`.
     var tint: Color?
 
     private var color: Color { tint ?? level.tint }
@@ -67,23 +67,40 @@ struct MetricGauge: View {
         VStack(spacing: 6) {
             RingGauge(pct: snapshot.pct(metric),
                       level: snapshot.level(metric),
-                      lineWidth: lineWidth)
+                      lineWidth: lineWidth,
+                      tint: snapshot.stale ? Level.none.tint : nil)
             VStack(spacing: 1) {
-                Text(metric.label)
-                    .font(.system(size: 9, weight: .semibold))
-                    .tracking(0.6)
-                    .foregroundStyle(.secondary)
-                Text(resets)
+                MetricLabel(snapshot: snapshot, metric: metric)
+                Text(snapshot.resetsText(metric))
                     .font(.system(size: 10))
                     .monospacedDigit()
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(metric.title)
+        .accessibilityValue(snapshot.spokenValue(metric))
     }
+}
 
-    private var resets: String {
-        let text = Format.until(snapshot.resetsAt(metric))
-        return text.isEmpty ? "—" : "resets \(text)"
+/// A metric's caption, with its level's symbol beside it.
+struct MetricLabel: View {
+    let snapshot: Snapshot
+    let metric: Metric
+    var size: CGFloat = 9
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Text(metric.label)
+                .font(.system(size: size, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(.secondary)
+            if let symbol = snapshot.level(metric).symbol {
+                Image(systemName: symbol)
+                    .font(.system(size: size - 1))
+                    .foregroundStyle(snapshot.stale ? Level.none.tint : snapshot.level(metric).tint)
+            }
+        }
     }
 }
 
@@ -117,23 +134,24 @@ struct LimitRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(metric.label)
-                .font(.system(size: 9, weight: .semibold))
-                .tracking(0.6)
-                .foregroundStyle(.secondary)
-                .frame(width: 46, alignment: .leading)
+            MetricLabel(snapshot: snapshot, metric: metric)
+                .frame(width: 60, alignment: .leading)
             MiniBar(fraction: (snapshot.pct(metric) ?? 0) / 100,
-                    tint: snapshot.level(metric).tint, height: 4)
+                    tint: snapshot.stale ? Level.none.tint : snapshot.level(metric).tint,
+                    height: 4)
             Text(Format.percent(snapshot.pct(metric)))
                 .font(.system(size: 10, weight: .medium))
                 .monospacedDigit()
-            Text(Format.until(snapshot.resetsAt(metric)))
+            Text(snapshot.resetsText(metric))
                 .font(.system(size: 9))
                 .monospacedDigit()
-                .foregroundStyle(.tertiary)
-                .frame(width: 44, alignment: .trailing)
+                .foregroundStyle(.secondary)
+                .frame(width: 70, alignment: .trailing)
         }
         .lineLimit(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(metric.title)
+        .accessibilityValue(snapshot.spokenValue(metric))
     }
 }
 

@@ -27,6 +27,7 @@ struct ClaudeUsageApp: App {
         MenuBarExtra {
             MenuView(snapshot: poller.snapshot,
                      isRefreshing: poller.isRefreshing,
+                     hasProfiles: !poller.profiles.isEmpty,
                      refresh: poller.refreshNow)
         } label: {
             // One or the other, never both: a MenuBarExtra label is happiest as a
