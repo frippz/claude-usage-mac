@@ -125,6 +125,23 @@ xcodebuild build -project ClaudeUsage.xcodeproj -scheme ClaudeUsage \
 xcodebuild test -project ClaudeUsage.xcodeproj -scheme SnapshotTests
 ```
 
+## Releasing
+
+Versions follow [semantic versioning](https://semver.org) and come from Git
+tags: `./build.sh` stamps the latest `vX.Y.Z` tag into the app, with
+`git describe`'s suffix on builds past it (`0.2.0-3-gabc1234`). To release
+the current `main`:
+
+```sh
+git pull --ff-only
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The Release workflow then creates a GitHub release with notes generated from
+the merged pull requests. It refuses a tag on a commit that is not on
+`main`. Releases carry no binary; build each one with `./build.sh`.
+
 ## License
 
 MIT, see [LICENSE](LICENSE). The original work is by Saeed Kolivand. Upstream
