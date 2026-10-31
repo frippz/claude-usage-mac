@@ -24,7 +24,7 @@ notice in [LICENSE-mattpocock](LICENSE-mattpocock).
 - Building and reviewing: `tdd`, `code-review`, and `codebase-design`,
   which `tdd` calls. Their examples are rewritten in Swift, and
   `code-review` takes its spec from the pull request or the developer's
-  request when no issue exists.
+  request.
 - Design questions: `grilling`, and `domain-modeling` for
   [`GLOSSARY.md`](../../GLOSSARY.md) and [`docs/adr/`](../../docs/adr/).
 - Maintaining skills and agent instructions: `writing-for-agents`.

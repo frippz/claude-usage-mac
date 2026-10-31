@@ -37,10 +37,9 @@ A defect counts as introduced when the diff introduced it or, when the developer
 
 Look for the originating spec, in this order:
 
-1. The spec or issue the developer gave as input.
-2. Issues referenced in the commit messages or the pull request (`#123`, `Closes #45`), fetched with `gh issue view`.
-3. The pull request's TLDR and Problem sections, or the request the change was built from as the developer stated it in the session.
-4. If nothing is found, ask the developer where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+1. The spec the developer gave as input.
+2. The pull request's TLDR and Problem sections, or the request the change was built from as the developer stated it in the session.
+3. If nothing is found, ask the developer where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 
 ### 3. Identify the standards sources
 

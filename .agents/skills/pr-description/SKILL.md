@@ -10,8 +10,6 @@ Use this template for the PR body. Keep it short, skip preambles, and use the te
 
 <What this PR changes, in a few sentences. Name anything not verified.>
 
-Closes #N
-
 ## How to test
 
 1. Run `./build.sh` on this branch.
@@ -73,7 +71,5 @@ Closes #N
 ```
 
 Write How to test when a reviewer can see the change in the running app, and cover there what only a human can verify.
-
-Write one `Closes #N` line per issue the PR completes, and drop the line when there is none. Elsewhere in the body, never put a closing keyword (close, closes, closed, fix, fixes, fixed, resolve, resolves, resolved) directly before an issue reference: GitHub closes that issue on merge. Write "#14 can be closed after merge", not "Close #14".
 
 Drop a section that has nothing to say, and a heading left with nothing under it. Report only what was done and run.
