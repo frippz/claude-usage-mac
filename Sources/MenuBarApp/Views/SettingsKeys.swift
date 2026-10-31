@@ -16,8 +16,8 @@ enum SettingsKey {
 
 /// How often the app polls. Seconds, because that is what the sleep takes.
 ///
-/// A minute is the default and the floor: the usage endpoint is cached for 55
-/// seconds anyway, so a tighter interval would only redraw the same numbers.
+/// A minute is the floor: the usage endpoint is cached for 55 seconds anyway,
+/// so a tighter interval would only redraw the same numbers.
 enum RefreshInterval: Int, CaseIterable, Identifiable {
     case minute = 60
     case twoMinutes = 120

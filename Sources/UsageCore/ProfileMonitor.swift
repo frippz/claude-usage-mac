@@ -14,8 +14,8 @@ public actor ProfileMonitor {
     /// Recent five-hour readings, oldest first, for the burn rate.
     ///
     /// ponytail: in memory only. A relaunch starts over and the rate reappears
-    /// two polls later; persisting it would mean writing a file every minute to
-    /// preserve a number that is meaningless once it is five minutes old.
+    /// two polls later; persisting it would mean writing a file on every poll
+    /// to preserve a number that is meaningless once its window has moved on.
     private var samples: [(at: Date, pct: Double)] = []
     private static let burnWindow: TimeInterval = 30 * 60
     /// The shortest gap worth measuring a slope across. Below this, a single
