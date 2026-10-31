@@ -99,6 +99,14 @@ Numbers are marked outdated after three missed polls, whatever the interval.
 
 ## Development
 
+Changes reach `main` through pull requests from `agent/` branches; the
+workflow, for people and coding agents alike, is in [AGENTS.md](AGENTS.md).
+Enable the Git hooks that enforce it once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ```sh
 swift test                       # unit tests
 swift run usage-cli              # human-readable summary
@@ -106,11 +114,14 @@ swift run usage-cli --profiles   # discovered profiles
 swift run usage-cli --json       # what the widget will render
 ```
 
-The snapshot tests render every widget size and the menu popover to PNGs in
-`snapshots/`:
+To build the app and widget without signing or installing, and to run the
+snapshot tests, which render every widget size and the menu popover to PNGs
+in `snapshots/`:
 
 ```sh
 xcodegen generate
+xcodebuild build -project ClaudeUsage.xcodeproj -scheme ClaudeUsage \
+  -configuration Release -derivedDataPath .build-xcode CODE_SIGNING_ALLOWED=NO
 xcodebuild test -project ClaudeUsage.xcodeproj -scheme SnapshotTests
 ```
 

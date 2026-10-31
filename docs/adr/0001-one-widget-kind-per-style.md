@@ -1,6 +1,10 @@
+---
+status: deprecated
+---
+
 # One widget kind per face style
 
-**Superseded in this fork:** the styled faces were removed, and the fork ships a
+Deprecated by [1db5a8a](https://github.com/frippz/claude-usage-mac/commit/1db5a8a): the styled faces were removed, and the fork ships a
 single widget kind, `se.frodlund.claude-usage.widget`. The bundle ID changed
 anyway, so no placed widget carried over.
 
