@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Claude Usage.app and install it to /Applications.
+# Build Headroom.app and install it to /Applications.
 #
 # Signs with the Apple Development identity of the team in project.yml. A stable
 # identity is what keeps the widget registered across rebuilds.
@@ -16,14 +16,14 @@ command -v xcodegen >/dev/null || {
 }
 
 DERIVED=".build-xcode"
-APP="$DERIVED/Build/Products/Release/Claude Usage.app"
+APP="$DERIVED/Build/Products/Release/Headroom.app"
 
 VERSION_SETTINGS=$(scripts/version.sh)
 
 xcodegen generate
 xcodebuild build \
-    -project ClaudeUsage.xcodeproj \
-    -scheme ClaudeUsage \
+    -project Headroom.xcodeproj \
+    -scheme Headroom \
     -configuration Release \
     -derivedDataPath "$DERIVED" \
     $VERSION_SETTINGS
@@ -35,13 +35,13 @@ echo "Version: ${VERSION_SETTINGS:-from project.yml}"
 [[ "${1:-}" == "--no-install" ]] && exit 0
 
 # Must not be running, or the copy replaces a live bundle.
-osascript -e 'quit app "Claude Usage"' 2>/dev/null || true
-rm -rf "/Applications/Claude Usage.app"
+osascript -e 'quit app "Headroom"' 2>/dev/null || true
+rm -rf "/Applications/Headroom.app"
 cp -R "$APP" /Applications/
 
 echo
-echo "Installed /Applications/Claude Usage.app"
-open "/Applications/Claude Usage.app"
+echo "Installed /Applications/Headroom.app"
+open "/Applications/Headroom.app"
 
 sleep 3
 echo

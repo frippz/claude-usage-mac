@@ -1,4 +1,4 @@
-# Claude Usage
+# Headroom
 
 A macOS menu bar app and widget set that shows Claude account limits and local
 token spend. This glossary pins the terms the UI and code must agree on.

@@ -1,4 +1,4 @@
-# claude-usage-mac
+# Headroom
 
 These instructions apply to every coding agent in this repository.
 CLAUDE.md imports this file; keep the instructions here.

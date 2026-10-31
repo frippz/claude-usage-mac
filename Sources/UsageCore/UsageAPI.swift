@@ -60,7 +60,7 @@ public actor UsageAPI {
     public static let endpoint = URL(string: "https://api.anthropic.com/api/oauth/usage")!
     /// Says who is calling. Tested 2026-10-29: the endpoint answers this the
     /// same as a claude-code User-Agent, so there is no need to pose as one.
-    public static var userAgent: String { "claude-usage-mac/\(AppVersion.current)" }
+    public static var userAgent: String { "headroom/\(AppVersion.current)" }
 
     private static let cacheTTL: TimeInterval = 55
 

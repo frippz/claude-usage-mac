@@ -1,4 +1,4 @@
-name: ClaudeUsage
+name: Headroom
 
 options:
   bundleIdPrefix: se.frodlund
@@ -27,7 +27,7 @@ settings:
 
 targets:
 
-  ClaudeUsage:
+  Headroom:
     type: application
     platform: macOS
     sources:
@@ -36,13 +36,15 @@ targets:
       - Sources/MenuBarApp
       - Sources/MenuBarApp/Assets.xcassets
     dependencies:
-      - target: ClaudeUsageWidget
+      - target: HeadroomWidget
         embed: true
         codeSign: true
     settings:
       base:
+        # The bundle IDs, App Group and widget kind keep the app's old name:
+        # changing them would drop placed widgets and saved settings.
         PRODUCT_BUNDLE_IDENTIFIER: se.frodlund.claude-usage
-        PRODUCT_NAME: Claude Usage
+        PRODUCT_NAME: Headroom
         GENERATE_INFOPLIST_FILE: YES
         # No Dock icon, no menu bar — this app is only its status item. The icon
         # still shows in Finder, the DMG, login items, and the widget gallery.
@@ -51,7 +53,7 @@ targets:
         INFOPLIST_KEY_NSHumanReadableCopyright: "MIT"
         COMBINE_HIDPI_IMAGES: YES
     entitlements:
-      path: Sources/MenuBarApp/ClaudeUsage.entitlements
+      path: Sources/MenuBarApp/Headroom.entitlements
       properties:
         # The host app is the one process that must read ~/.claude and the
         # Keychain, so it is deliberately not sandboxed.
@@ -59,7 +61,7 @@ targets:
         com.apple.security.application-groups:
           - XU3G5KB593.se.frodlund.claude-usage
 
-  ClaudeUsageWidget:
+  HeadroomWidget:
     type: app-extension
     platform: macOS
     sources:
@@ -69,18 +71,18 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: se.frodlund.claude-usage.widget
-        PRODUCT_NAME: ClaudeUsageWidget
+        PRODUCT_NAME: HeadroomWidget
     info:
       path: Sources/Widget/Info.plist
       properties:
-        CFBundleDisplayName: Claude Usage
+        CFBundleDisplayName: Headroom
         # Must match the containing app or the bundle fails validation.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
-      path: Sources/Widget/ClaudeUsageWidget.entitlements
+      path: Sources/Widget/HeadroomWidget.entitlements
       properties:
         # Required, not optional: macOS never registers an unsandboxed app
         # extension, so the widget simply never appears in the gallery. It reads
@@ -115,10 +117,10 @@ targets:
 
 schemes:
 
-  ClaudeUsage:
+  Headroom:
     build:
       targets:
-        ClaudeUsage: all
+        Headroom: all
     run:
       config: Debug
     archive:

@@ -16,7 +16,7 @@ import WidgetKit
 /// which looks exactly like the user's choice being ignored. A String is a
 /// primitive: there is no type registry involved, so there is nothing to fail.
 struct UsageConfigIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "Claude Usage"
+    static var title: LocalizedStringResource = "Headroom"
     static var description = IntentDescription("Choose which Claude account to show.")
 
     /// A profile's config directory path — the same value used as `Profile.id`.

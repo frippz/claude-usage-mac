@@ -3,7 +3,7 @@ import SwiftUI
 import UserNotifications
 
 @main
-struct ClaudeUsageApp: App {
+struct HeadroomApp: App {
     @StateObject private var poller = Poller()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 

@@ -1,4 +1,4 @@
-# claude-usage-mac
+# Headroom
 
 Claude Code's five-hour and weekly usage limits in the macOS menu bar and as a
 desktop widget.
@@ -36,7 +36,7 @@ The widget appears in the widget gallery once the app has run.
 | `api.anthropic.com/api/oauth/usage` | Five-hour and seven-day utilization, per-model weekly windows where the plan has them, and when each resets |
 
 That request is the only thing sent anywhere. It identifies itself honestly as
-`claude-usage-mac/<version>`. The endpoint is undocumented and may change or
+`headroom/<version>`. The endpoint is undocumented and may change or
 disappear without notice; if it does, the app shows an error rather than
 numbers.
 
@@ -91,10 +91,10 @@ Numbers are marked outdated after three missed polls, whatever the interval.
 
 - **`UsageCore`**: a Swift package holding credentials, the API client,
   profiles, snapshots and formatting. It has no UI.
-- **`Claude Usage.app`**: the menu bar app. It polls every profile and writes
+- **`Headroom.app`**: the menu bar app. It polls every profile and writes
   one `bundle.json`, readable only by you, to the App Group container
   `XU3G5KB593.se.frodlund.claude-usage`. Then it asks WidgetKit to reload.
-- **`ClaudeUsageWidget.appex`**: the sandboxed widget. It reads that file and
+- **`HeadroomWidget.appex`**: the sandboxed widget. It reads that file and
   nothing else, and never touches the network or credentials.
 - **`usage-cli`**: a read-only command-line view of the same data.
 
@@ -121,9 +121,9 @@ in `snapshots/`:
 
 ```sh
 xcodegen generate
-xcodebuild build -project ClaudeUsage.xcodeproj -scheme ClaudeUsage \
+xcodebuild build -project Headroom.xcodeproj -scheme Headroom \
   -configuration Release -derivedDataPath .build-xcode CODE_SIGNING_ALLOWED=NO
-xcodebuild test -project ClaudeUsage.xcodeproj -scheme SnapshotTests
+xcodebuild test -project Headroom.xcodeproj -scheme SnapshotTests
 ```
 
 ## Releasing
