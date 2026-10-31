@@ -12,6 +12,7 @@ struct MenuView: View {
     /// bundle it's hosted in, so the snapshots would otherwise show prohibition
     /// badges and the test runner's version number.
     var showsActions = true
+
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
