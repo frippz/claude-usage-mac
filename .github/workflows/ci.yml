@@ -1,7 +1,10 @@
 name: CI
 
+# Push only on main: a branch's commits get their run from pull_request, so
+# no push run reports the required checks beside it with a different base.
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -16,34 +19,35 @@ concurrency:
 
 jobs:
   # The macOS jobs are required checks, so they are skipped, not left out:
-  # a skipped job passes, a workflow that never ran blocks the merge.
+  # a skipped job passes, a workflow that never ran blocks the merge. They
+  # skip only on an explicit docs_only, so a failed Changes job runs them.
   changes:
     name: Changes
     runs-on: ubuntu-latest
     outputs:
-      code: ${{ steps.diff.outputs.code }}
+      docs_only: ${{ steps.diff.outputs.docs_only }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
-      # Anything but Markdown counts as code. With no base to compare, such as
-      # a new branch or a manual run, everything does.
+      # Anything but Markdown needs the build. With no base to compare, such
+      # as a new branch or a manual run, the build runs.
       - id: diff
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          code=true
+          docs_only=false
           if git cat-file -e "${BASE}^{commit}" 2>/dev/null \
               && git diff --quiet "$BASE" HEAD -- ':!*.md'; then
-            code=false
+            docs_only=true
           fi
-          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+          echo "docs_only=$docs_only" | tee -a "$GITHUB_OUTPUT"
 
   core:
     name: UsageCore
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -69,7 +73,7 @@ jobs:
   app:
     name: App + Widget
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
