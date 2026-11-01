@@ -20,25 +20,16 @@ body:
     attributes:
       label: Steps to reproduce
       placeholder: |
-        1. Open the menu bar menu
+        1. Open the menu
         2. …
-  - type: dropdown
-    id: where
-    attributes:
-      label: Where
-      multiple: true
-      options:
-        - Menu bar
-        - Menu
-        - Widget
-        - Settings
-        - Notifications
-        - Other
   - type: input
     id: version
     attributes:
       label: Headroom version
-      description: Shown at the bottom of the menu, after the status, for example `v0.3.0`.
+      description: >-
+        Copy it in full from the bottom of the menu, after the status, for
+        example `v0.3.0-2-gf005fed`. If the menu shows no version, select
+        Headroom in Applications and choose File → Get Info.
     validations:
       required: true
   - type: input
