@@ -1,0 +1,50 @@
+name: Bug report
+description: Something in Headroom doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste an OAuth token, anything from `.credentials.json`, or output
+        from `security` or the Keychain. Issues are public. If a screenshot or
+        log shows one, crop or redact it before you attach it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. Quote any message the app showed exactly.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the menu bar menu
+        2. …
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - Menu bar
+        - Menu
+        - Widget
+        - Settings
+        - Notifications
+        - Other
+  - type: input
+    id: version
+    attributes:
+      label: Headroom version
+      description: Shown at the bottom of the menu, after the status, for example `v0.3.0`.
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: macOS 26.1
+    validations:
+      required: true
