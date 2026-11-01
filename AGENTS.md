@@ -91,14 +91,23 @@ with the summary in the imperative and starting lower case, such as
 Merge commits keep their default message. The `commit-msg` hook refuses
 any other subject.
 
+Pull requests are squash-merged, the repository's only merge method, and
+the squashed commit takes the pull request's title, or its one commit's
+subject. So a pull request title follows the same rule, and the merge
+keeps that default title; no hook checks it.
+
 Authorized under this workflow:
 
 - Local commits on an `agent/` branch in its own worktree.
-- Pushing that branch and opening its pull request, written with the
+- Pushing that branch and opening its pull request, titled by the commit
+  message rule and written with the
   [`pr-description`](.agents/skills/pr-description/SKILL.md) skill.
 - Bringing your own open pull request up to date by merging `origin/main`
   into its branch and pushing, never rebasing or force-pushing.
 - Removing a worktree and its local branch after its pull request merged.
+  Git doesn't see a squash-merged branch as merged, so delete it with
+  `git branch -D` only when its tip equals the merged pull request's
+  `headRefOid` (`gh pr view <n> --json headRefOid`).
 
 Merging a pull request needs the developer's authorization, and so does
 pushing a [release](README.md#releasing) tag.
