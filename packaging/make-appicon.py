@@ -2,7 +2,7 @@
 """Render the macOS AppIcon set.
 
 The mark is a meter: a frosted squircle around a dark dial, a 270-degree arc
-split at the app's own thresholds (green to 60%, amber to 80%, red to the
+split at the app's default thresholds (green to 50%, amber to 80%, red to the
 limit) and one needle. What lies past the needle is the headroom. The colours
 are Level's tints in SharedViews/Theme.swift.
 
@@ -15,6 +15,7 @@ committed, so CI needs neither. Rerun this only when the mark changes:
 import json
 import math
 import os
+import shutil
 import subprocess
 
 OUT = os.path.join(
@@ -23,8 +24,11 @@ OUT = os.path.join(
 )
 
 OK, WARN, CRITICAL = "#22c55e", "#f59e0b", "#ef4444"
+# Level.of's defaults. The icon can't follow a user's own thresholds.
+WARN_AT, CRITICAL_AT = 0.5, 0.8
 
 C = 512          # canvas centre; the canvas is 1024
+DIAL = 318       # dial radius
 R = 250          # arc radius
 STROKE = 64
 START, SWEEP = -135, 270    # degrees clockwise from 12 o'clock
@@ -64,9 +68,9 @@ def _ticks():
 def svg(ticks=True):
     origin = (1024 - CONTENT) / 2
     segments = [
-        (OK, _arc(_at(0), _at(0.6) - GAP)),
-        (WARN, _arc(_at(0.6) + GAP, _at(0.8) - GAP)),
-        (CRITICAL, _arc(_at(0.8) + GAP, _at(1))),
+        (OK, _arc(_at(0), _at(WARN_AT) - GAP)),
+        (WARN, _arc(_at(WARN_AT) + GAP, _at(CRITICAL_AT) - GAP)),
+        (CRITICAL, _arc(_at(CRITICAL_AT) + GAP, _at(1))),
     ]
     arcs = "\n".join(
         f'<path d="{d}" fill="none" stroke="{c}" stroke-width="{STROKE}" stroke-linecap="round"/>'
@@ -100,7 +104,7 @@ def svg(ticks=True):
   <radialGradient id="hub" cx="0.4" cy="0.3" r="0.8">
     <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b8c1cc"/>
   </radialGradient>
-  <clipPath id="clip"><circle cx="{C}" cy="{C}" r="318"/></clipPath>
+  <clipPath id="clip"><circle cx="{C}" cy="{C}" r="{DIAL}"/></clipPath>
   <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
     <feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#000" flood-opacity="0.28"/>
   </filter>
@@ -110,8 +114,8 @@ def svg(ticks=True):
 </defs>
 <rect x="{origin}" y="{origin}" width="{CONTENT}" height="{CONTENT}" rx="{CORNER}" fill="url(#base)" filter="url(#shadow)"/>
 <rect x="{origin + 3}" y="{origin + 3}" width="{CONTENT - 6}" height="{CONTENT - 6}" rx="{CORNER - 3}" fill="none" stroke="url(#edge)" stroke-width="6"/>
-<circle cx="{C}" cy="{C}" r="318" fill="url(#dial)"/>
-<circle cx="{C}" cy="{C}" r="322" fill="none" stroke="url(#rim)" stroke-width="10"/>
+<circle cx="{C}" cy="{C}" r="{DIAL}" fill="url(#dial)"/>
+<circle cx="{C}" cy="{C}" r="{DIAL + 4}" fill="none" stroke="url(#rim)" stroke-width="10"/>
 <path d="{_arc(_at(0), _at(1))}" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="{STROKE}" stroke-linecap="round"/>
 {tick_path}
 {arcs}
@@ -139,6 +143,8 @@ VARIANTS = [(16, 1), (16, 2), (32, 1), (32, 2), (128, 1), (128, 2),
 
 
 def main():
+    if shutil.which("rsvg-convert") is None:
+        raise SystemExit("rsvg-convert not found: brew install librsvg")
     os.makedirs(OUT, exist_ok=True)
     images = []
 
