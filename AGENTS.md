@@ -88,7 +88,8 @@ Commit messages follow
 with the summary in the imperative and starting lower case, such as
 `docs: add a Reporting bugs section to the README`. Use `feat`, `fix`,
 `perf`, `docs`, `refactor`, `test`, `build`, `ci`, `chore` or `revert`.
-Merge commits keep their default message.
+Merge commits keep their default message. The `commit-msg` hook refuses
+any other subject.
 
 Authorized under this workflow:
 
