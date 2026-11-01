@@ -7,10 +7,9 @@ lies past the needle is the headroom. The colours are Level's tints in
 SharedViews/Theme.swift.
 
 This writes one SVG per layer into AppIcon.icon/Assets. The squircle, glass,
-shadows, dark and clear appearances, and the flattened icon for macOS before
-26 come from Icon Composer and Xcode, set in AppIcon.icon/icon.json, which
-Icon Composer edits and this script leaves alone. Rerun this only when the
-mark changes:
+shadows, and each layer's opacity in the light, dark and clear appearances
+live in AppIcon.icon/icon.json, which Icon Composer edits and this script
+leaves alone. Rerun this only when the mark changes:
 
     python3 packaging/make-appicon.py
 """
@@ -34,9 +33,10 @@ START, SWEEP = -135, 270    # degrees clockwise from 12 o'clock
 NEEDLE = 0.45               # where the needle points, as a fraction of the sweep
 GAP = 9.6                   # half gap between segments, room for both round caps
 
-# The mark was drawn for a squircle 824 wide on a 1024 grid, the macOS icon
-# margin. Icon Composer's canvas is the squircle itself, so each layer's
-# viewBox crops to it and keeps the dial's proportion to the squircle.
+# The mark was drawn for a squircle 824 wide on a 1024 grid: the macOS icon
+# margin, without which an icon sits visibly larger than the native ones
+# beside it in Finder. Icon Composer's canvas is the squircle itself and the
+# system adds the margin, so each layer's viewBox crops to the squircle.
 SQUIRCLE = 824
 
 
@@ -64,31 +64,37 @@ def _ticks():
     return " ".join(path)
 
 
-def _stroke(d, colour, width, opacity=1):
-    return (f'<path d="{d}" fill="none" stroke="{colour}" stroke-opacity="{opacity}" '
+def _stroke(d, colour, width):
+    return (f'<path d="{d}" fill="none" stroke="{colour}" '
             f'stroke-width="{width}" stroke-linecap="round"/>')
 
 
 def _svg(body, defs=""):
     o = (1024 - SQUIRCLE) / 2
+    defs = f"<defs>{defs}</defs>\n" if defs else ""
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" '
             f'viewBox="{o:g} {o:g} {SQUIRCLE} {SQUIRCLE}">\n'
-            f'<defs>{defs}</defs>\n{body}\n</svg>\n')
+            f'{defs}{body}\n</svg>\n')
 
 
 def layers():
+    segments = {
+        "ok.svg": (OK, _at(0), _at(WARN_AT) - GAP),
+        "warn.svg": (WARN, _at(WARN_AT) + GAP, _at(CRITICAL_AT) - GAP),
+        "critical.svg": (CRITICAL, _at(CRITICAL_AT) + GAP, _at(1)),
+    }
+    # The track and ticks are drawn opaque white; their faintness is each
+    # layer's opacity in icon.json, which differs by appearance.
     return {
         "dial.svg": _svg(
             f'<circle cx="{C}" cy="{C}" r="{DIAL}" fill="url(#dial)"/>',
             '<radialGradient id="dial" cx="0.5" cy="0.32" r="0.75">'
             '<stop offset="0" stop-color="#273141"/><stop offset="1" stop-color="#0b0f15"/>'
             '</radialGradient>'),
-        "track.svg": _svg(
-            _stroke(_arc(_at(0), _at(1)), "#fff", STROKE, 0.08)
-            + _stroke(_ticks(), "#fff", 10, 0.28)),
-        "ok.svg": _svg(_stroke(_arc(_at(0), _at(WARN_AT) - GAP), OK, STROKE)),
-        "warn.svg": _svg(_stroke(_arc(_at(WARN_AT) + GAP, _at(CRITICAL_AT) - GAP), WARN, STROKE)),
-        "critical.svg": _svg(_stroke(_arc(_at(CRITICAL_AT) + GAP, _at(1)), CRITICAL, STROKE)),
+        "track.svg": _svg(_stroke(_arc(_at(0), _at(1)), "#fff", STROKE)),
+        "ticks.svg": _svg(_stroke(_ticks(), "#fff", 10)),
+        **{name: _svg(_stroke(_arc(d0, d1), colour, STROKE))
+           for name, (colour, d0, d1) in segments.items()},
         "needle.svg": _svg(
             f'<path d="M 507 236 Q 512 226 517 236 L 532 512 L 492 512 Z" fill="#fff" '
             f'transform="rotate({_at(NEEDLE):.1f} {C} {C})"/>'),

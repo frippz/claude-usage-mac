@@ -69,7 +69,13 @@
         {
           "glass" : false,
           "image-name" : "ok.svg",
-          "name" : "ok"
+          "name" : "ok",
+          "opacity-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : 0.95
+            }
+          ]
         }
       ],
       "name" : "arcs",
@@ -86,13 +92,50 @@
       "layers" : [
         {
           "glass" : false,
+          "image-name" : "ticks.svg",
+          "name" : "ticks",
+          "opacity-specializations" : [
+            {
+              "value" : 0.28
+            },
+            {
+              "appearance" : "dark",
+              "value" : 0.22
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 0.4
+            }
+          ]
+        },
+        {
+          "glass" : false,
           "image-name" : "track.svg",
-          "name" : "track"
+          "name" : "track",
+          "opacity-specializations" : [
+            {
+              "value" : 0.08
+            },
+            {
+              "appearance" : "dark",
+              "value" : 0.07
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 0.14
+            }
+          ]
         },
         {
           "glass" : false,
           "image-name" : "dial.svg",
-          "name" : "dial"
+          "name" : "dial",
+          "opacity-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : 0.38
+            }
+          ]
         }
       ],
       "name" : "dial",
