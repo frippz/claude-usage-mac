@@ -87,6 +87,12 @@ shows the name it looks for.
 
 Numbers are marked outdated after three missed polls, whatever the interval.
 
+## Reporting bugs
+
+Report a bug with the
+[bug report form](https://github.com/frippz/headroom/issues/new?template=bug_report.yml),
+which says what to include and what to leave out.
+
 ## How it fits together
 
 - **`UsageCore`**: a Swift package holding credentials, the API client,
