@@ -90,10 +90,8 @@ Numbers are marked outdated after three missed polls, whatever the interval.
 ## Reporting bugs
 
 Report a bug with the
-[bug report form](https://github.com/frippz/headroom/issues/new?template=bug_report.yml).
-It asks for the version at the bottom of the menu, which names the commit
-your copy was built from. Issues are public, so never include a token or
-anything read from your credentials.
+[bug report form](https://github.com/frippz/headroom/issues/new?template=bug_report.yml),
+which says what to include and what to leave out.
 
 ## How it fits together
 
