@@ -1,0 +1,157 @@
+{
+  "fill-specializations" : [
+    {
+      "value" : {
+        "linear-gradient" : [
+          "srgb:0.96863,0.97647,0.98824,1.00000",
+          "srgb:0.81176,0.84314,0.88627,1.00000"
+        ]
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "linear-gradient" : [
+          "srgb:0.21961,0.25490,0.30588,1.00000",
+          "srgb:0.05882,0.07451,0.09412,1.00000"
+        ]
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "hub.svg",
+          "name" : "hub"
+        },
+        {
+          "glass" : true,
+          "image-name" : "needle.svg",
+          "name" : "needle"
+        }
+      ],
+      "name" : "needle",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "critical.svg",
+          "name" : "critical",
+          "opacity-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : 0.4
+            }
+          ]
+        },
+        {
+          "glass" : false,
+          "image-name" : "warn.svg",
+          "name" : "warn",
+          "opacity-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : 0.65
+            }
+          ]
+        },
+        {
+          "glass" : false,
+          "image-name" : "ok.svg",
+          "name" : "ok",
+          "opacity-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : 0.95
+            }
+          ]
+        }
+      ],
+      "name" : "arcs",
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "ticks.svg",
+          "name" : "ticks",
+          "opacity-specializations" : [
+            {
+              "value" : 0.28
+            },
+            {
+              "appearance" : "dark",
+              "value" : 0.22
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 0.4
+            }
+          ]
+        },
+        {
+          "glass" : false,
+          "image-name" : "track.svg",
+          "name" : "track",
+          "opacity-specializations" : [
+            {
+              "value" : 0.08
+            },
+            {
+              "appearance" : "dark",
+              "value" : 0.07
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 0.14
+            }
+          ]
+        },
+        {
+          "glass" : false,
+          "image-name" : "dial.svg",
+          "name" : "dial",
+          "opacity-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : 0.38
+            }
+          ]
+        }
+      ],
+      "name" : "dial",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "macOS"
+    ]
+  }
+}
