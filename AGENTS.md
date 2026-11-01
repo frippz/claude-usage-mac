@@ -72,10 +72,13 @@ changed, the checks performed and any remaining limitations.
 
 Every change goes on its own `agent/<slug>` branch in its own worktree, a
 sibling of the main checkout: `git worktree add -b agent/<slug>
-../headroom-<slug> origin/main`, then `git branch --unset-upstream`.
-Commit and push only to that branch, as fast-forwards; changes reach `main`
-through a pull request. The repository's Git hooks enforce this once enabled
-with `git config core.hooksPath .githooks` (once per clone), and Claude Code
+../headroom-<slug> origin/main`, then `git branch --unset-upstream`:
+created from `origin/main`, the branch would track `main`, so a bare
+`git pull` would bring `main` in, by rebase where Git is set to, and a
+bare `git push` could aim at `main`. Commit and push only to that branch,
+as fast-forwards; changes reach `main` through a pull request. The
+repository's Git hooks enforce this once enabled with
+`git config core.hooksPath .githooks` (once per clone), and Claude Code
 blocks commands that skip them.
 
 Commit task-related changes before handoff and preserve unrelated user work.
