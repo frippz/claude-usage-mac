@@ -83,6 +83,14 @@ blocks commands that skip them.
 
 Commit task-related changes before handoff and preserve unrelated user work.
 
+Commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/),
+with the summary in the imperative and starting lower case, such as
+`docs: add a Reporting bugs section to the README`. Use `feat`, `fix`,
+`perf`, `docs`, `refactor`, `test`, `build`, `ci`, `chore` or `revert`.
+Merge commits keep their default message. The `commit-msg` hook refuses
+any other subject.
+
 Authorized under this workflow:
 
 - Local commits on an `agent/` branch in its own worktree.
