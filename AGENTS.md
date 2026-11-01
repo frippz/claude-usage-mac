@@ -83,6 +83,14 @@ blocks commands that skip them.
 
 Commit task-related changes before handoff and preserve unrelated user work.
 
+Commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+`<type>(<optional scope>): <summary>`, with the summary in the imperative
+and lower case, such as `docs: add a Reporting bugs section to the README`.
+Use `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `ci` or `chore`,
+and mark a breaking change with `!` after the type. Merge commits keep
+Git's default message.
+
 Authorized under this workflow:
 
 - Local commits on an `agent/` branch in its own worktree.
